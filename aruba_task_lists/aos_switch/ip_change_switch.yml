@@ -1,0 +1,27 @@
+# Add static ip to VLAN
+# Set Body
+- set_fact:
+    vlan_body: {"vlan_id": 0, "ip_address_mode": "IAAM_STATIC", "ip_address": { "version": "IAV_IP_V4", "octets": "{{ static_ip }}"}, "ip_mask": { "version": "IAV_IP_V4", "octets": "{{ subnet }}"}}
+- set_fact:
+    vlan_body_added: "{{ vlan_body | make_vlan_body( vlan ) }}"
+
+- name: Add static IP to VLAN
+  uri:
+    url: "https://{{ ip }}/rest/v4/vlans/{{ vlan }}/ipaddresses"
+    method: POST
+    headers:
+      cookie: '{{ switch_session.json.cookie }}'
+    body:  "{{ vlan_body_added }}"
+    body_format: json
+    validate_certs: no
+    status_code: 201
+  register: vlan_ip_data
+
+#    Example
+#    - name: Add IP to VLAN
+#      include: aruba_task_lists/aos_switch/ip_change_switch.yml
+#      vars:
+#        static_ip: "new ip for the switch"
+#        subnet: "subnet"
+#        gateway: "gateway"
+#        vlan: "vlan"

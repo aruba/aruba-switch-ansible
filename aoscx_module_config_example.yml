@@ -1,0 +1,77 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2017 Hewlett Packard Enterprise Development LP
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+
+# Example on how to use ArubaOS-Switch Ansible Modules to configure AOS-CX in this Project setup
+#
+# Use via:
+# ansible-playbook aoscx_module_config_example.yml -e site=branchX -e state=STATUS
+#
+# Replace X with branch number you want to configure
+# Repleace STATUS with "configure" to configure the switch and "unconfigure" to undo configuration done by the configuration part
+#
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Store Global variables in localhost
+      block:
+        - set_fact:
+            site_data: "{{ hostvars[groups[site][0]] }}"
+        - set_fact:
+            cx_group_name: "{{ site_data.cx_group_name }}"  # Group for the CX
+
+- hosts: "{{ hostvars.localhost.cx_group_name }}"
+  gather_facts: no
+  # This will set the needed overall variables for the modules to use the connection plugin.
+  # Normally these could be stored in the inventory but we are "migrating" them to keep a similar inventory structure for all workflows.
+  vars:
+    ansible_user: "{{ user }}"
+    ansible_password: "{{ password }}"
+    ansible_host: "{{ ip }}"
+  connection: arubaoscx_rest
+  tasks:
+      # Configure Switch with modules
+    - block:
+        - name: Adding new interface
+          arubaoscx_l3_interface:
+            interface: '1/1/3'
+            description: 'A l3 interface'
+
+        - name: Adding new vlan
+          arubaoscx_vlan:
+            vlan_id: '42'
+            name: 'vlan42'
+            description: 'This is a new VLAN'
+      when: state == "configure"
+
+    # Unconfigure Switch with modules
+    - block:
+        - name: Deleting interface
+          arubaoscx_l3_interface:
+            interface: 1/1/3
+            state: 'absent'
+
+        - name: Deleting vlan
+          arubaoscx_vlan:
+            vlan_id: '42'
+            state: 'absent'
+      when: state == "unconfigure"
+
+
+
+

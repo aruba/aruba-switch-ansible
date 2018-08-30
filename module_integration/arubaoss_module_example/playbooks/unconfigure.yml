@@ -1,0 +1,115 @@
+- hosts: switch1
+  gather_facts: False
+  tasks:
+    - block:
+
+      - name: change loop-protect mode to default
+        arubaoss_loop_protect:
+          command: update
+
+      - name: delete port from vlan
+        arubaoss_vlan:
+          vlan_id: 300
+          name: "vlan300"
+          config: delete
+          command: config_vlan_port
+          port_id: "2"
+          port_mode: "POM_TAGGED_STATIC"
+
+      - name: delete vlan ip address
+        arubaoss_vlan:
+          vlan_id: 300
+          name: "vlan300"
+          config: delete
+          command: config_vlan_ipaddress
+          vlan_ip_address: "10.10.30.40"
+          version: "IAV_IP_V4"
+          vlan_ip_mask: "255.255.255.0"
+
+      - name: delete vlan dhcp helper address
+        arubaoss_vlan:
+          vlan_id: 300
+          name: "vlan300"
+          config: delete
+          command: config_vlan_dhcpHelperAddress
+          helper_addresses: "10.10.10.100"
+          version: "IAV_IP_V4"
+
+      - name: delete class to qos
+        arubaoss_qos_policy:
+          policy_name: my_qos
+          class_name: my_class
+          state: delete
+
+      - name: delete qos from port
+        arubaoss_interface:
+          interface: 5
+          qos_policy: "my_qos"
+          state: delete
+
+      - name: delete qos from port
+        arubaoss_interface:
+          interface: 5
+          qos_policy: "my_qos"
+          state: delete
+
+      - name: delete qos on vlan 
+        arubaoss_vlan:
+          vlan_id: 300
+          command: config_vlan_qos
+          qos_policy: "my_qos"
+          config: delete
+
+
+      - name: delete traffic class
+        arubaoss_traffic_class:
+          class_name: my_class
+          state: delete
+
+      - name: delete traffic class
+        arubaoss_traffic_class:
+          class_name: my_class
+          state: delete
+
+      - name: delete qos policy
+        arubaoss_qos_policy:
+          policy_name: my_qos
+          state: delete
+      - name: delete vlan 
+        arubaoss_vlan:
+          vlan_id: 300
+          name: "vlan300"
+          config: delete
+          command: config_vlan
+
+      - name:  delete acl on port
+        arubaoss_interface:
+          interface: 5
+          acl_id: "{{item.acl}}"
+          acl_direction: "{{item.dir}}" 
+          acl_type: "{{item.type}}"
+          state: delete
+        with_items:
+          - {"acl":"test","dir":"AD_INBOUND","type":"AT_STANDARD_IPV4"}
+
+      - name: delete acl on vlan
+        arubaoss_vlan:
+          vlan_id: 300
+          acl_id: "test"
+          acl_direction: AD_OUTBOUND 
+          acl_type: AT_EXTENDED_IPV4 
+          command: config_vlan_acl
+          config: delete
+
+      - name: delete standard acl
+        arubaoss_acl_policy:
+          acl_name: test
+          state: delete
+
+      - name: enable port
+        arubaoss_interface:
+          interface: 5
+          admin_stat: True
+
+      ignore_errors: yes
+

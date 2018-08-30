@@ -1,0 +1,43 @@
+# Upload certificates to ArubaOS Switches
+# Set Vars
+- set_fact:
+    api_url: "https://{{ ip }}/rest/v5/ta_profiles"
+    cert_value: "{{ lookup('file', path_to_cert ) }}"
+
+# Get Base64 File
+- name: Change cert to base64 encode
+  shell: echo {{ cert_value | b64encode }} > files/ta_cert_base64.pem
+- set_fact:
+    cert_base64: "{{ lookup('file', 'files/ta_cert_base64.pem') }}"
+
+- name: Check if Cert already exists
+  uri:
+    url: "{{ api_url }}/{{ta_name}}"
+    method: GET
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    validate_certs: no
+    status_code: 200,404
+  register: result
+
+- name: Apply Cert if ta cert doesn't exit
+  uri:
+    url: "{{ api_url }}"
+    method: POST
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    body: {"ta_name": "{{ ta_name }}", "ta_certificate_base64_encoded_pem": "{{ cert_base64 }}"}
+    validate_certs: no
+    status_code: 201
+  register: result
+  when:
+    - result.status != 200
+
+#     # Example
+#     - name: Upload TA cert
+#       include: aruba_task_lists/aos_switch/cert_upload.yml
+#       vars:
+#         path_to_cert: "Path to cert" # Enter Path to certificate here (replace path_to_cert)
+#         ta_name: "Name of Cert" # Enter Name of Cert here

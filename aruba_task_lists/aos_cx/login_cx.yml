@@ -1,0 +1,18 @@
+# Login to ArubaOS-CX Switch
+- name: Login to ArubaOS-CX Switch
+  uri:
+    url: "https://{{ ip }}/rest/v1/login"
+    method: POST
+    return_content: yes
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    body: "username={{ user }}&password={{ password }}"
+    validate_certs: no
+    status_code: 200
+  register: cx_session
+
+
+#    Example
+#    - name: Login CX
+#      include: aruba_task_lists/aos_cx/login_cx.yml
+

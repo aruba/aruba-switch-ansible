@@ -1,0 +1,89 @@
+# Add interface to lag
+- name: Get Current Lag Object
+  uri:
+    url: 'https://{{ ip }}/rest/v1/system/ports/{{ lag }}'
+    method: GET
+    body_format: json
+    headers:
+      cookie: "{{ cx_session.set_cookie }}"
+    validate_certs: no
+    status_code: 200
+  register: get_lag_response
+
+# Set PUT Body for Lag
+- set_fact:
+    vrf_put: "{{ get_lag_response.json | make_lag_body(ip, interface ) }}"
+
+- name: Add interface to lag
+  uri:
+    url: 'https://{{ ip }}/rest/v1/system/ports/{{ lag }}'
+    method: PUT
+    body_format: json
+    headers:
+      cookie: "{{ cx_session.set_cookie }}"
+    body: "{{ vrf_put }}"
+    validate_certs: no
+    status_code: 200
+  register: put_lag_response
+
+- name: Delete from VRF Table - 1/2
+  uri:
+    url: 'https://{{ ip }}/rest/v1/system/vrfs/default?selector=configuration'
+    method: GET
+    body_format: json
+    headers:
+      cookie: "{{ cx_session.set_cookie }}"
+    validate_certs: no
+    status_code: 200
+  register: get_vrf_response
+
+# Set PUT Body for VRF
+- set_fact:
+    vrf_put: "{{ get_vrf_response.json | make_vrf_body( interface ) }}"
+
+- name: Delete from VRF Table - 2/2
+  uri:
+    url: 'https://{{ ip }}/rest/v1/system/vrfs/default'
+    method: PUT
+    body_format: json
+    headers:
+      cookie: "{{ cx_session.set_cookie }}"
+    body: "{{ vrf_put }}"
+    validate_certs: no
+    status_code: 200
+  register: get_vrf_response
+
+- name: Delete from Bridge Table - 1/2
+  uri:
+    url: 'https://{{ ip }}/rest/v1/system/bridge?selector=configuration'
+    method: GET
+    body_format: json
+    headers:
+      cookie: "{{ cx_session.set_cookie }}"
+    validate_certs: no
+    status_code: 200
+  register: get_bridge_response
+
+# Set PUT Body for Bridge
+- set_fact:
+    bridge_put: "{{ get_bridge_response.json | make_bridge_body( interface ) }}"
+
+- name: Delete from Bridge Table - 2/2
+  uri:
+    url: 'https://{{ ip }}/rest/v1/system/bridge'
+    method: PUT
+    body_format: json
+    headers:
+      cookie: "{{ cx_session.set_cookie }}"
+    body: "{{ bridge_put }}"
+    validate_certs: no
+    status_code: 200
+  register: get_vrf_response
+
+
+#   Example:
+#   - name: Add Interface to lag
+#      include: aruba_task_lists/aos_cx/add_int_to_lag.yml
+#      vars:
+#        lag: "lag31"
+#        interface: "/rest/v1/system/interfaces/1%2F1%2F20" # URI for interface 20

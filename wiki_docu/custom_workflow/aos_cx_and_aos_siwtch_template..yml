@@ -1,0 +1,50 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Store Global variables in localhost
+      block:
+        - set_fact:
+            site_data: "{{ hostvars[groups[site][0]] }}"
+        - set_fact:
+            sw_group_name: "{{ site_data.sw_group_name }}"  # Group for the Switches
+            cx_group_name: "{{ site_data.cx_group_name }}"  # Group for the CX
+
+
+# AOS-Switch
+- hosts: "{{ hostvars.localhost.sw_group_name }}"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Confgiure Switch
+      block:
+        # Login to ArubaOS switches
+        - name: Login
+          include: aruba_task_lists/aos_switch/login_switch.yml
+
+        # !Enter AOS-Switch tasks here!
+
+      always:
+        # Logout from ArubaOS Switch
+        - name: Logout
+          include: aruba_task_lists/aos_switch/logout_switch.yml
+
+
+# AOS-CX
+- hosts: "{{ hostvars.localhost.cx_group_name }}"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Confgiure Switch
+      block:
+        #  Login to ArubaOS CX switches
+        - name: Login CX
+          include: aruba_task_lists/aos_cx/login_cx.yml
+
+        # !Enter AOS-CX tasks here!
+
+      always:
+        # Logout from ArubaOS Switch
+        - name: Logout CX
+          include: aruba_task_lists/aos_cx/logout_cx.yml
+

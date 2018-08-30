@@ -1,0 +1,19 @@
+# Allows you to execute multiple CLI commands via the API
+- name: Aruba AOS-Switch Batch CLI
+  uri:
+    url: "https://{{ ip }}/rest/v4/cli_batch"
+    method: POST
+    headers:
+      cookie: '{{ switch_session.json.cookie }}'
+    body: "{{ command_string | make_cli_batch_body() }}"
+    body_format: json
+    validate_certs: no
+    status_code: 202
+  register: system_data
+
+
+#     # Example
+#    - name: Example CLI Batch
+#      include: aruba_task_lists/aos_switch/cli_batch.yml
+#      vars:
+#        command_string: 'hostname test\nrest-interface' # multiple commands split by the following two character '\n'

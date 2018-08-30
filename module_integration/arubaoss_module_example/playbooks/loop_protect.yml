@@ -1,0 +1,41 @@
+- hosts: switch1
+  gather_facts: False
+
+  tasks: 
+   - block:
+
+     - name: update loop 
+       arubaoss_loop_protect:
+         command: update
+         trap: True
+
+     - name: enable loop-prtoect on port
+       arubaoss_loop_protect:
+         command: update_port
+         interface: 1
+
+     - name: enable loop-prtoect on port
+       arubaoss_loop_protect:
+         command: update_port
+         interface: A1
+
+
+     - name: disable loop-prtoect on port
+       arubaoss_loop_protect:
+         command: update_port
+         interface: 1
+         loop_protected: False
+
+     - name: change loop-protect mode to vlan
+       arubaoss_loop_protect:
+         command: update
+         mode: LPM_VLAN
+
+
+     - name: enable loop-prtoect on vlan
+       arubaoss_loop_protect:
+         command: update_vlan
+         vlan: 10
+
+
+     ignore_errors: yes                   

@@ -1,0 +1,19 @@
+# Change hostname of Switch
+- name: Aruba AOS-S Change Hostname
+  uri:
+    url: "https://{{ ip }}/rest/v4/system"
+    method: PUT
+    headers:
+      cookie: '{{ switch_session.json.cookie }}'
+    body: {"name": "{{ hostname }}"}
+    body_format: json
+    validate_certs: no
+    status_code: 200
+  register: system_data
+
+
+#    Example
+#    - name: Change Hostname
+#      include: aruba_task_lists/aos_switch/hostname_switch.yml
+#      vars:
+#        hostname: "hostname of switch"

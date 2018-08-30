@@ -1,0 +1,17 @@
+# General Vars
+group: "branchX"        # Replace X with Branch Number
+user: "username"        # Username for AOS-Switch Switches in Branch X
+password: "password"    # Password for AOS-Switch Switches in Branch X
+
+# ZTP Vars
+cx_port_subnet: "0.0.0.0" # Subnet for Port of 2930 Switch
+cx_port_gateway: "0.0.0.0" # Gateway for Port of 2930 Switch
+cx_port_vlan: 302 # VLAN Number for Port of 2930 Switch. In this example 302.
+
+# Config Generator Vars - Example Values
+uplinkvlan: 302
+uplinkvlanname: "VLAN302"
+uplinktrunk: "trk1"
+oobmip: "10.6.7.29"
+oobmmask: "255.255.255.0"
+oobmgw: "10.6.7.1"

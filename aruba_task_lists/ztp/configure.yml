@@ -1,0 +1,107 @@
+# Important Note: In this Example some variables (ip, username,password) are passed additional to each task because they have different names.
+# Please see arubaos_switch_config.yml for the normal way of using tasks.
+
+
+# AOS-Switch configuration
+# 1. Enable ssl for secure REST API access
+# 2. Change Switch IP to Static IP
+# 3. Change Hostname of the ArubaOS-Switch
+
+# Changing ArubaOS-Switch default REST access from http to https by creating self-signed cert and enabling ssl access
+- name: Enroll SSL for Switch
+  arubaos_switch_ssh_cli:
+    ip: "{{ item.tmp_ip }}"
+    user: "{{ hostvars['sw-'+item.mac]['user'] }}"
+    password: "{{ hostvars['sw-'+item.mac]['password'] }}"
+    command_list: ["conf t","crypto pki enroll-self-signed certificate-name ztpcert key-type rsa key-size 1024 subject common-name ztp_cert","web-management ssl"]
+  register: ssh_cli_output
+
+- name: Configure AOS Switch
+  block:
+    - name: Initialize Logout IP
+      set_fact:
+        logout_ip: "{{ item.tmp_ip }}"
+
+    # Login to ArubaOS switches
+    - name: Login
+      include: aruba_task_lists/aos_switch/login_switch.yml
+      vars:
+        ip: "{{ item.tmp_ip }}"
+        user: "{{ hostvars['sw-'+item.mac]['user'] }}"
+        password: "{{ hostvars['sw-'+item.mac]['password'] }}"
+
+    # Change hostname of the ArubaOS-Switch
+    - name: Change Hostname
+      include: aruba_task_lists/aos_switch/hostname_switch.yml
+      vars:
+        ip: "{{ item.tmp_ip }}"
+        hostname: "{{ item.hostname }}"
+
+    # Change IP of the ArubaOS-Switch to static IP
+    - name: Add IP to VLAN
+      include: aruba_task_lists/aos_switch/ip_change_switch.yml
+      vars:
+        ip: "{{ item.tmp_ip }}"
+        static_ip: "{{ item.static_ip }}"
+        subnet: "{{ hostvars[groups[site+'_switches'][0]]['cx_port_subnet'] }}"
+        vlan: "{{ hostvars[groups[site+'_switches'][0]]['cx_port_vlan'] }}"
+
+    - name: Change Logout IP to new IP
+      set_fact:
+        logout_ip: "{{ item.static_ip }}"
+
+  always:
+    - name: Logout
+      include: aruba_task_lists/aos_switch/logout_switch.yml
+      vars:
+        ip: "{{ logout_ip }}"
+
+
+# AOS-CX Configuration:
+# 1. Change port back to LAG Configuration
+# 2. Change interface description to reflect connected edge switch
+- name: Configure Peer 1 Switch
+  block:
+    # Get IP from Hostvars
+    - name: Get AOS-CX Switch IP
+      set_fact:
+        cx_ip: "{{ hostvars[hostvars[groups[site][0]]['peer1']]['ip'] }}"
+
+    # Login to ArubaOS CX switches
+    - name: Login CX
+      include: aruba_task_lists/aos_cx/login_cx.yml
+      vars:
+        ip: "{{ cx_ip }}"
+        user: "{{ hostvars[hostvars[groups[site][0]]['peer1']]['user'] }}"
+        password: "{{ hostvars[hostvars[groups[site][0]]['peer1']]['password'] }}"
+
+#    # Currently not in Use, workaround below
+#    # Set lag and description for interface
+#    - name: Add Interface to lag
+#      include: aruba_task_lists/aos_cx/add_int_to_lag.yml
+#      vars:
+#        ip: "{{ cx_ip }}"
+#        lag: "{{ item.lag }}"
+#        interface: "{{ item.interface }}"
+
+    - name: Associate LAG to int via CLI
+      arubaos_cx_ssh_cli:
+        ip: "{{ cx_ip }}"
+        user: "{{ hostvars[hostvars[groups[site][0]]['peer1']]['user'] }}"
+        password: "{{ hostvars[hostvars[groups[site][0]]['peer1']]['password'] }}"
+        commands: ["conf t","int {{ (item.interface | basename | replace('%2F', '/') | splitext)[0] }}","lag {{ item.lag }}", "no shutdown"]
+
+
+
+    - name: Change interface description
+      include: aruba_task_lists/aos_cx/change_if_description.yml
+      vars:
+        ip: "{{ cx_ip }}"
+        description: "{{ item.hostname }}"
+        interface: "{{ item.interface }}"
+
+  always:
+    - name: Logout CX
+      include: aruba_task_lists/aos_cx/logout_cx.yml
+      vars:
+        ip: "{{ cx_ip }}"

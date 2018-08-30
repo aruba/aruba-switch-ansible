@@ -1,0 +1,43 @@
+# Configure Global SpanningTree settings
+# Set Vars - Build Body
+- fail:
+    msg: "Status must be defined!"
+  when: status is undefined
+- set_fact:
+    put_body: {"is_enabled": True}
+  when: status == "enable"
+- set_fact:
+    put_body: {"is_enabled": False}
+  when: status == "disable"
+- set_fact:
+    put_body: "{{ put_body | combine( { 'priority': priority } ) }}"
+  when: priority is defined
+- set_fact:
+    put_body: "{{ put_body | combine( { 'mode': 'STM_MSTP' } ) }}"
+  when: mode is defined and mode == "MSTP"
+- set_fact:
+    put_body: "{{ put_body | combine( { 'mode': 'STM_RPVST' } ) }}"
+  when: mode is defined and mode == "RPVST"
+
+
+- name: Configure SpanningTree Globally
+  uri:
+    url: "https://{{ ip }}/rest/v4/stp"
+    method: PUT
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    body: "{{ put_body | json_type_converter([['is_enabled','boolean'],['priority', 'int']]) }}"
+    validate_certs: no
+    status_code: 200
+  register: result
+
+
+#    # Example
+#    - name: Configure SpanningTree Globally
+#      include: aruba_task_lists/aos_switch/spanning_tree_global.yml
+#      vars:
+#        status: "enable" # or "disable"
+#        # Optional - If you want to change a value you need to specify it
+#        priority: 8 # Number between 0 and 15
+#        mode: "MSTP" # or "RPVST"

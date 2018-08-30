@@ -1,0 +1,17 @@
+# Get LLDP Info from the AOS-CX Switch
+- name: Get all LLDP Neighbor Information
+  uri:
+    url: "https://{{ ip }}/rest/v1/system/interfaces/*/lldp_neighbors"
+    method: GET
+    headers:
+      cookie: "{{ cx_session.set_cookie }}"
+    body_format: json
+    validate_certs: no
+    status_code: 200
+  register: lldp_data
+
+
+#    Example
+#    - name: Get ArubaOS-CX LLDP Information
+#      include: aruba_task_lists/aos_cx/lldp_cx.yml
+

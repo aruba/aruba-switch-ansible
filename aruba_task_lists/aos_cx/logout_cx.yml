@@ -1,0 +1,17 @@
+# Logout from ArubaOS-CX Switch
+- name: Logout from ArubaOS-CX Switch
+  uri:
+    url: 'https://{{ ip }}/rest/v1/logout'
+    method: POST
+    body_format: json
+    headers:
+      cookie: "{{ cx_session.set_cookie }}"
+    validate_certs: no
+    status_code: 200
+  register: logout_response
+
+
+#    Example
+#    - name: Logout CX
+#      include: aruba_task_lists/aos_cx/logout_cx.yml
+

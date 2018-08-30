@@ -1,0 +1,14 @@
+- hosts: switch1
+  gather_facts: False
+  tasks:
+    - block:
+
+      - name: file copy
+        arubaoss_file_transfer:
+          file_url: "http://192.168.1.2/WC_16_07_REL_XANADU_QA_062618.swi"
+          file_type: "FTT_FIRMWARE"
+          action: "FTA_DOWNLOAD"
+
+      ignore_errors: yes
+
+

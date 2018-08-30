@@ -1,0 +1,159 @@
+# Upgrade Firmware of ArubaOS-Switch
+# Init Set Vars
+- fail:
+    msg: "Only path_to_swi or swi_url are allowed to be defined."
+  when: path_to_swi is defined and swi_url is defined
+- set_fact:
+    path: "{{ path_to_swi | dirname  }}"
+    to_version: "{{ ((path_to_swi | basename) | splitext )[0]}}"
+  when: path_to_swi is defined
+- set_fact:
+    final_url: "{{ swi_url }}"
+    to_version: "{{ ((swi_url | basename) | splitext )[0]}}"
+  when: swi_url is defined
+- set_fact:
+    boot_i: "BI_PRIMARY_IMAGE"
+  when: boot_image is defined and boot_image == "primary"
+- set_fact:
+    boot_i: "BI_SECONDARY_IMAGE"
+  when: boot_image is defined and boot_image == "secondary"
+- set_fact:
+    url_ip: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+- set_fact:
+    url_ip: "{{ host_ip }}"
+  when: host_ip is defined
+
+
+- set_fact:
+    state: "upgrade"
+  when: state is undefined
+- fail:
+    msg: "State needs to be either 'upgrade', 'downgrade' or 'current'"
+  when: (state != "upgrade") and (state != "downgrade") and (state != "current")
+# Current Version Logic
+- set_fact:
+    change_version: False
+    stay: True
+  when: state == "current"
+- debug:
+    msg: "Not changing Switch Firmware..."
+  when: stay is defined and stay
+
+
+- name: Check current Firmware Version
+  arubaos_switch_ssh_cli:
+    ip: "{{ ip }}"
+    username: "{{ user }}"
+    password: "{{ password }}"
+    show_command: ["show flash"]
+  register: ssh_output
+  when: stay is undefined
+
+# Version Handling
+- block:
+  - set_fact:
+      current_version: '{{ (ssh_output.cli_output[0] | replace(" ", "")) | find_version( boot_image )  | replace(".","_") }}'
+  - debug:
+      msg: 'Current Version: {{ current_version }}'
+  - debug:
+      msg: 'To be Version: {{ to_version }}'
+  when: stay is undefined
+
+
+# Upgrade Logic
+- fail:
+    msg: "Switch shall be upgraded but to be version is lower than or equal to current version. Unable to upgrade."
+  when: state == "upgrade" and current_version >= to_version
+- set_fact:
+    change_version: True
+    upgrade: True
+  when: state == "upgrade" and current_version < to_version
+- debug:
+    msg: "Upgrading Switch Firmware..."
+  when: upgrade is defined and upgrade
+
+# Downgrade Logic
+- fail:
+    msg: "Switch shall be downgraded but to be version is higher than or equal to current version. Unable to downgrade."
+  when: state == "downgrade" and current_version <= to_version
+- set_fact:
+    change_version: True
+    downgrade: True
+  when: state == "downgrade" and current_version > to_version
+- debug:
+    msg: "Downgrading Switch Firmware..."
+  when: downgrade is defined and downgrade
+
+
+
+
+
+
+# Will be skipped if current firmware equal to be installed firmware
+- block:
+    # Start HTTP Server if this option got chosen
+    - block:
+        - block:
+            - name: Start HTTP Server
+              shell: |
+                python -m SimpleHTTPServer 80 &> /dev/null &
+                echo $!
+              args:
+                chdir: "{{ path }}"
+                executable: /bin/bash
+              become: yes
+              register: pid
+            - debug:
+                msg: "The PID of the HTTP Server is: {{ pid.stdout }}"
+            - set_fact:
+                final_url: "http://{{ url_ip }}/{{ path_to_swi | basename }}"
+          when: path_to_swi is defined
+
+        - name: Upgrade Firmware via API
+          uri:
+            url: "https://{{ ip }}/rest/v1/file-transfer"
+            method: POST
+            headers:
+              cookie: '{{ switch_session.json.cookie }}'
+            body: {"url":"{{ final_url }}","file_type":"FTT_FIRMWARE","action":"FTA_DOWNLOAD","boot_image": "{{ boot_i }}", "force_firmware_install": true }
+            body_format: json
+            validate_certs: no
+            status_code: 202
+          register: system_data
+
+        # Check if upload is complete and only go allowed to stop the HTTP Server afterwads
+        - name: Check if upload is completed
+          arubaos_switch_ssh_cli:
+            ip: "{{ ip }}"
+            username: "{{ user }}"
+            password: "{{ password }}"
+            show_command: ["show flash"]
+          register: check_output
+          until: (check_output.cli_output[0] | replace(" ", "")) | find_version( boot_image ) | replace(".","_") == to_version
+          retries: 12
+          delay: 5
+
+        - set_fact:
+            upload_not_completed: "{{ check_output.failed }}"
+
+      always:
+        - name: Stop HTTP Server
+          shell: kill {{ pid.stdout | quote }}
+          become: yes
+          when: path_to_swi is defined
+  when: change_version
+
+#    Example
+#    - name: Upgrade Firmware
+#      include: aruba_task_lists/aos_switch/firmware_upgrade.yml
+#      vars:
+#        ip: "ip of switch"
+#        boot_image: "primary" or "secondary"
+#        host_ip: "ip of host" # enter IP of Host if you do not want to use the default IP (Only needed if path_to_swi is given)
+#        # You can enter one of the following
+#        path_to_swi: "path to swi file" # This will host a HTTP server for you
+#        swi_url: "url to file on a http/https server" # Please host the image files in http/https server
+#        state: "downgrade" # pass "downgrade" to downgrade switch or "current" to stay at same version, default is "upgrade"
+#       # The Task will register a variable called "upload_not_completed" which will be false if the upload is completed. This can be used for starting another action after upload.
+
+

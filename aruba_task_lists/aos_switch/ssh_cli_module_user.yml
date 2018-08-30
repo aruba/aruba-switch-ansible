@@ -1,0 +1,68 @@
+# This Task is an example on how to use the custom SSH CLI Module for AOS-Switch from this Project
+# It supports show commands as well as executing multiple commands
+# It does not support commands that have prompts currently
+
+
+# This Task will function in a similar workflow as all other tasks.
+# In this example IP, username and password are all variables from the Playbook which includes the task.
+# You will have to pass all variables to the Module
+
+
+
+- name: Execute CLI commands
+  arubaos_switch_ssh_cli:
+    ip: "{{ ip }}"
+    user: "{{ user }}"
+    password: "{{ password }}"
+    # This is a list of commands that create a self singed certificate and enroll SSL for your Switch.
+    command_list: ["conf t","crypto pki enroll-self-signed certificate-name ztpcert key-type rsa key-size 1024 subject common-name ztp_cert","web-management ssl"]
+  # This result does not return CLI Outputs
+  register: result
+
+
+
+
+
+- name: Check if upload is completed
+  arubaos_switch_ssh_cli:
+    ip: "{{ ip }}"
+    user: "{{ user }}"
+    password: "{{ password }}"
+    # This will execute each command through the CLI and return the CLI Output
+    show_command: ["show flash", "show version"]
+  # The result will have the CLI Output
+  register: result_cli_output
+
+# The result will have a JSON-key called "cli_output" which is an array
+# This array will have an string entry for each command that got executed (command in show_command array)
+# You can acces it via the index which start with zero
+
+# This will print out the result of the show flash output
+- debug:
+    msg: "'show flash' Output: {{ check_output.cli_output[0] }}"
+
+# This will print out the result of the show version output
+- debug:
+    msg: "'show version' Output: {{ check_output.cli_output[1] }}"
+
+
+
+
+## Overall the following variables for this module are possible:
+#- name: All possible Options explaind
+#  arubaos_switch_ssh_cli:
+#    ip: "" # String of the IP that you want to connect to. Required
+#    username: "" # String of the username for SSH connection. Required
+#    password: "" # String of the password for the SSH connection. Required (Will not be logged by Ansible)
+#    # You can enter one or both of the following attributes. The Module will execute either and change the result body accordingly
+#    command_list: ["command1", "command2"] # Array of strings of commands, will return not CLI output and is faster then show command
+#    show_command: ["command1", "command2"] # Array of strings of commands, will return CLI Output to result body. Can also have non show command or mode switches
+#    # If command_list or show_command are not specified, the module will just login and logout via ssh.
+#
+#    # Following are optional parameters which let you change the SSH connection setup
+#    port: 22 # Port for SSH connection, default 22
+#    timeout: 60 # Timeout for response on SSH connection, default 60
+#    allow_agent: False # Set False to disable connect tio SSH Agent, default False
+#    key_filename: "path_to_file" # the filename, or list of filenames, of optional private key(s) and/or certs to try for authentication, default None
+#  # This allows you to get a JSON Object of the Module return
+#  register: result

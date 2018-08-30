@@ -1,0 +1,21 @@
+# Configure DNS for ArubaOS Switches
+- name: Configure DNS for ArubaOS Switch
+  uri:
+    url: "https://{{ ip }}/rest/v4/dns"
+    method: PUT
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    body: {"dns_config_mode": "DCM_MANUAL", "server_1": {"version":"IAV_IP_V4", "octets": "{{dns_ip1}}" }, "dns_domain_names": ["{{ dns_name1 }}"] }
+    validate_certs: no
+    status_code: 200
+  register: result
+
+
+#    Example
+#    - name: Set dns
+#      include: aruba_task_lists/aos_switch/set_dns.yml
+#      vars:
+#        dns_ip1: "ip for dns"
+#        dns_name1: "tmelab.net"
+

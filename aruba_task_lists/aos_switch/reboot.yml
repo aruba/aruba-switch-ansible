@@ -1,0 +1,32 @@
+# Reboots the AOS-Switch
+# Set Vars
+- set_fact:
+    boot_i: "BI_PRIMARY_IMAGE"
+  when: boot_image is defined and boot_image == "primary"
+- set_fact:
+    boot_i: "BI_SECONDARY_IMAGE"
+  when: boot_image is defined and boot_image == "secondary"
+
+- name: Reboot AOS-Switch
+  uri:
+    url: "https://{{ ip }}/rest/v1/system/reboot"
+    method: POST
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    body: {"boot_image": "{{ boot_i }}"}
+    validate_certs: no
+    status_code: 200
+  register: result
+
+- set_fact:
+    reboot_not_send: "{{ result.failed }}"
+
+
+#        # Example
+#        - name: Reboot Switch via API
+#          include: aruba_task_lists/aos_switch/reboot.yml
+#          vars:
+#            boot_image: "primary"
+#       # The Task will register a variable called "reboot_not_send" which will be false if the reboot was sned. This can be used to avoid a logout API call while the system reboots
+

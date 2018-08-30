@@ -1,0 +1,33 @@
+; JL320A Configuration Editor; Created on release #WC.16.05.0007
+; Ver #12:08.1d.9b.3f.bf.bb.ef.7c.59.fc.6b.fb.9f.fc.ff.ff.37.ef:ba
+
+hostname {{ hostname }}
+module 1 type jl320a
+trunk 23-24 {{uplinktrunk}} lacp
+include-credentials
+password manager user-name "admin" sha1 "d033e22ae348aeb5660fc2140aec35850c4da997"
+ip route 0.0.0.0 0.0.0.0 172.1.3.254
+ip routing
+snmp-server community "public" unrestricted
+snmpv3 engineid "00:00:00:0b:00:00:94:18:82:dd:f3:00"
+oobm
+   ip address {{oobmip}} {{oobmmask}}
+   ip default-gateway {{oobmgw}}
+   exit
+vlan 1
+   name "DEFAULT_VLAN"
+   no untagged Trk1
+   untagged 1-22
+   ip address dhcp-bootp
+   exit
+vlan {{uplinkvlan}}
+   name {{uplinkvlanname}}
+   tagged {{uplinktrunk}}
+   ip address dhcp-bootp
+   exit
+spanning-tree Trk1 priority 4
+no tftp server
+no autorun
+no dhcp config-file-update
+no dhcp image-file-update
+no dhcp tr69-acs-url

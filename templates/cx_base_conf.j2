@@ -1,0 +1,63 @@
+Current configuration:
+!
+!Version ArubaOS-CX TL.10.00.0013
+hostname SWAGG-DEV-C2-8320B
+user admin group administrators password ciphertext AQBapeKmPanFDwsfnvy9lnrEV3yLOKufw5kzsnZmBH9robEjZwAAAHXUV0n4s1gXzwIggfb9dawMaYwUQwSSuckN+DTpLoMdnoz1fKeziX8VZXHrIdwcYr3fzYufaHOoAEQ+MMdp3swuWn0sWDNYemwWCEIAowfwb0IC1y2qOab/lhP27nBmeRdR9Hxb4X8=
+clock timezone pst8pdt
+!
+!
+!
+ssh server vrf default
+ssh server vrf mgmt
+!
+!
+!
+!
+vlan 1,100,302
+spanning-tree config-name 98:f2:b3:68:f0:52
+interface mgmt
+    no shutdown
+    ip static 10.6.7.25/24
+    default-gateway 10.6.7.1
+interface lag 31 multi-chassis
+    no shutdown
+    no routing
+    vlan trunk native 1
+    vlan trunk allowed 302
+    lacp mode active
+interface lag 59
+    description ISL LINK to Core2
+    no shutdown
+    no routing
+    vlan trunk native 1 tag
+    vlan trunk allowed 1,100,302
+    mclag inter-switch-link
+    lacp mode active
+interface "{{upstream_link}}"
+    description LINK UPSTREAM TO TOR
+    no shutdown
+    ip address 10.252.1.2/30
+interface 1/1/20
+    description LINK DOWNSTREAM TO SWACC-DEV-1
+    no shutdown
+    lag 31
+interface "{{isl_link1}}"
+    description  "{{isl_link_description}}"
+    no shutdown
+    lag 59
+interface "{{isl_link2}}"
+    description "{{isl_link_description}}"
+    no shutdown
+    lag 59
+interface vlan100
+    ip address 10.100.10.2/24
+    active-gateway ip 10.100.10.1 00:00:11:11:22:22
+    ip helper-address 10.6.7.10
+interface vlan302
+    ip address 172.1.3.202/24
+    active-gateway ip 172.1.3.254 00:11:22:33:44:66
+    ip helper-address 10.6.7.10
+ip route 10.6.7.0/24 10.252.1.1
+https-server rest access-mode read-write
+https-server vrf mgmt
+https-server vrf default

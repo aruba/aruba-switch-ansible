@@ -1,0 +1,205 @@
+- hosts: switch1
+  gather_facts: False
+  tasks:
+    - block:
+
+      - name: create traffic class
+        arubaoss_traffic_class:
+          class_name: my_class
+
+      - name: create traffic class
+        arubaoss_traffic_class:
+          class_name: my_class
+
+      - name: add match criteria
+        arubaoss_traffic_class:
+          class_name: my_class
+          icmp_code: 1
+          icmp_type: 1
+          source_ip_address: 0.0.0.0
+          source_ip_mask: 255.255.255.255
+          destination_ip_address: 0.0.0.0
+          destination_ip_mask: 255.255.255.255
+          protocol_type: "PT_ICMP"
+          entry_type: QTCET_MATCH
+        register: class_1
+
+      - name: add match criteria tcp
+        arubaoss_traffic_class:
+          class_name: my_class
+          source_ip_address: 0.0.0.0
+          source_ip_mask: 255.255.255.255
+          destination_ip_address: 0.0.0.0
+          destination_ip_mask: 255.255.255.255
+          protocol_type: "PT_TCP"
+          entry_type: QTCET_MATCH
+        register: class_2
+
+      - name: change tcp to udp
+        arubaoss_traffic_class:
+          class_name: my_class
+          source_ip_address: 0.0.0.0
+          source_ip_mask: 255.255.255.255
+          destination_ip_address: 0.0.0.0
+          destination_ip_mask: 255.255.255.255
+          sequence_no: "{{class_2.sequence_no}}"
+          protocol_type: "PT_UDP"
+          entry_type: QTCET_MATCH
+
+      - name: re-do udp
+        arubaoss_traffic_class:
+          class_name: my_class
+          source_ip_address: 0.0.0.0
+          source_ip_mask: 255.255.255.255
+          destination_ip_address: 0.0.0.0
+          destination_ip_mask: 255.255.255.255
+          sequence_no: "{{class_2.sequence_no}}"
+          protocol_type: "PT_UDP"
+          entry_type: QTCET_IGNORE
+          destination_port: {"port_not_equal": 0,"port_range_start": 443,"port_range_end": 443}
+
+      - name: delete udp
+        arubaoss_traffic_class:
+          class_name: my_class
+          sequence_no: "{{class_2.sequence_no}}"
+          state: delete
+
+      - name: delete udp again
+        arubaoss_traffic_class:
+          class_name: my_class
+          sequence_no: "{{class_2.sequence_no}}"
+          state: delete
+
+      - name: re-add match criteria
+        arubaoss_traffic_class:
+          class_name: my_class
+          icmp_code: 1
+          icmp_type: 1
+          source_ip_address: 0.0.0.0
+          source_ip_mask: 255.255.255.255
+          destination_ip_address: 0.0.0.0
+          destination_ip_mask: 255.255.255.255
+          protocol_type: "PT_ICMP"
+          entry_type: QTCET_MATCH
+
+      - name: create qos policy
+        arubaoss_qos_policy:
+          policy_name: my_qos
+
+      - name: re-create qos policy
+        arubaoss_qos_policy:
+          policy_name: my_qos
+
+      - name: delete qos policy
+        arubaoss_qos_policy:
+          policy_name: my_qos
+          state: delete
+
+      - name: delete qos policy
+        arubaoss_qos_policy:
+          policy_name: my_qos
+          state: delete
+
+      - name: re-create qos policy
+        arubaoss_qos_policy:
+          policy_name: my_qos
+
+      - name: attach class to qos
+        arubaoss_qos_policy:
+          policy_name: my_qos
+          class_name: my_class
+          action: QPAT_RATE_LIMIT
+          action_value: 1000
+          sequence_no: "{{class_1.sequence_no}}"
+
+      - name: re-attach class to qos
+        arubaoss_qos_policy:
+          policy_name: my_qos
+          class_name: my_class
+          action: QPAT_RATE_LIMIT
+          action_value: 1000
+          sequence_no: "{{class_1.sequence_no}}"
+
+      - name: configure qos on port
+        arubaoss_interface:
+          interface: 5
+          qos_policy: "my_qos"
+
+      - name: create vlan
+        arubaoss_vlan:
+          vlan_id: 50
+          name: test_vlan
+
+
+      - name: configure qos on vlan 
+        arubaoss_vlan:
+          vlan_id: 50
+          command: config_vlan_qos
+          qos_policy: "my_qos"
+
+      - name: configure qos on vlan 
+        arubaoss_vlan:
+          vlan_id: 50
+          command: config_vlan_qos
+          qos_policy: "my_qos"
+
+      - name: configure qos on port
+        arubaoss_interface:
+          interface: 5
+          qos_policy: "my_qos"
+
+      - name: delete class to qos
+        arubaoss_qos_policy:
+          policy_name: my_qos
+          class_name: my_class
+          state: delete
+
+      - name: delete qos from port
+        arubaoss_interface:
+          interface: 5
+          qos_policy: "my_qos"
+          state: delete
+
+      - name: delete qos from port
+        arubaoss_interface:
+          interface: 5
+          qos_policy: "my_qos"
+          state: delete
+
+      - name: delete qos on vlan 
+        arubaoss_vlan:
+          vlan_id: 50
+          command: config_vlan_qos
+          qos_policy: "my_qos"
+          config: delete
+
+      - name: delete qos on vlan 
+        arubaoss_vlan:
+          vlan_id: 50
+          command: config_vlan_qos
+          qos_policy: "my_qos"
+          config: delete
+
+      - name: delete class to qos
+        arubaoss_qos_policy:
+          policy_name: my_qos
+          class_name: my_class
+          sequence_no: 10
+          state: delete
+
+      - name: delete traffic class
+        arubaoss_traffic_class:
+          class_name: my_class
+          state: delete
+
+      - name: delete traffic class
+        arubaoss_traffic_class:
+          class_name: my_class
+          state: delete
+
+      - name: delete qos policy
+        arubaoss_qos_policy:
+          policy_name: my_qos
+          state: delete
+
+

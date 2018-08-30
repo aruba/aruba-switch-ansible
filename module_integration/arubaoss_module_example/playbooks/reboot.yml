@@ -1,0 +1,9 @@
+- hosts: switch1
+  gather_facts: False
+  tasks:
+    - block:
+
+      - name: reboot device
+        arubaoss_reboot:
+          boot_image: BI_SECONDARY_IMAGE
+

@@ -1,0 +1,32 @@
+- hosts: switch1
+  gather_facts: False
+
+  tasks:
+    - block:
+
+      - name: enable/disable captive portal
+        arubaoss_captive_portal:
+          enable_captive_portal: "{{item}}"
+        with_items:
+          - False
+          - True
+
+
+      - name: add custom captive portal
+        arubaoss_captive_portal:
+          profile_name: "{{item}}"
+          server_url: "http://hpe.com"
+        with_items:
+          - test1
+          - test1
+          - test2
+
+      - name: add/remove url_has
+        arubaoss_captive_portal:
+          url_hash_key: "{{item}}"
+        with_items:
+          - ""
+          - test1
+
+
+

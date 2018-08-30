@@ -1,0 +1,22 @@
+# Allows you to execute one CLI command via the API
+- name: Execute AnyCLI command
+  uri:
+    url: "https://{{ ip }}/rest/v4/cli"
+    method: POST
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    body: {"cmd": "{{command}}"}
+    validate_certs: no
+    status_code: 200,202
+  register: uri_result
+  failed_when: uri_result.json.status != "CCS_SUCCESS"
+
+
+#    Example
+#    - name: anycli configure
+#      include: aruba_task_lists/aos_switch/anycli.yml command="{{item}}"
+#      with_items:
+#        - "configure terminal"
+#        - "vlan 233"
+#  You could also use the cli_batch.yml tasks or the SSH CLI Module to execute multiple CLI Commands on AOS-Switch

@@ -1,0 +1,7 @@
+# General Vars
+cx_group_name: "branchX_cxs"       # Replace X with Number of Branch
+sw_group_name: "branchX_switches"  # Replace X with Number of Branch
+
+# ZTP Vars
+peer1: "mac-address of ArubaOS-CX-1"
+peer2: "mac-address of ArubaOS-CX-2"

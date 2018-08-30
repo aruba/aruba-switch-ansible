@@ -1,0 +1,23 @@
+# Login to ArubaOS-CX Switch
+- fail:
+    msg: "Please pass the 'boot_image' variable with the value 'primary' or 'secondary'"
+  when: boot_image is undefined or (boot_image is defined and (boot_image != 'primary' and boot_image != 'secondary' ))
+
+- name: Reboot ArubaOS-CX Switch
+  uri:
+    url: 'https://{{ ip }}/rest/v1/boot?image={{ boot_image }}'
+    method: POST
+    body_format: json
+    headers:
+      cookie: "{{ cx_session.set_cookie }}"
+    validate_certs: no
+    status_code: 202
+  register: reboot_response
+
+
+#    Example
+#    - name: Login CX
+#      include: aruba_task_lists/aos_cx/reboot.yml
+#      vars:
+#        boot_image: "primary" # or "secondary"
+

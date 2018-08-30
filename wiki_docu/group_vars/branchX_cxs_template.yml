@@ -1,0 +1,10 @@
+# General Vars
+group: "branchX"      # Replace X with Branch Number
+user: "username"      # Username for AOS-CX Switches in Branch X
+password: "password"  # Password for AOS-CX Switches in Branch X
+
+# Config Generator Vars - Example Values
+isl_link1: "1/1/47"
+isl_link2: "1/1/48"
+isl_link_description: "link to SWAG for ISL & SVI OSPF Peering"
+upstream_link: "1/1/1"

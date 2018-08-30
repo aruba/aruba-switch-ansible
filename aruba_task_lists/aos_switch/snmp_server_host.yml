@@ -1,0 +1,46 @@
+# Upload certificates to ArubaOS Switches
+# Set Vars
+- set_fact:
+    api_url: "https://{{ ip }}/rest/v5/snmp-server/hosts"
+- set_fact:
+    snmp_host_body: "{{ host_data | make_snmp_host_body() }}"
+
+#Check if SNMP host already exits for SNMP community
+- name: Check if SNMP host already exits for SNMP community
+  uri:
+    url: "{{ api_url }}/{{host_data['host_ip']}}-{{host_data['community']}}"
+    method: GET
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    validate_certs: no
+    status_code: 200,404
+  register: result
+
+# Configure SNMP hosts for given SNMP community
+- name: Configure SNMP hosts for given SNMP community
+  uri:
+    url: "{{ api_url }}"
+    method: POST
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    body: "{{snmp_host_body}}"
+    validate_certs: no
+    status_code: 201
+  register: result
+  when:
+    - result.status !=  200
+
+# Example
+# - set_fact:
+#     snmp_host:
+#       host_ip: "10.3.7.5"
+#       community: "Test123"
+#       trap_level: "all" #  accespt all/critical/debug/not_info/none
+#       informs: True
+#       use_oobm: True
+# - name: Set snmp hosts
+#   include: aruba_task_lists/aos_switch/snmp_server_host.yml
+#   vars:
+#     host_data: "{{ snmp_host }}"

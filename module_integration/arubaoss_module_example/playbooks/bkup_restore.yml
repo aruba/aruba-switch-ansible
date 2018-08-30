@@ -1,0 +1,40 @@
+- hosts: switch1
+  gather_facts: False
+
+  tasks:
+    - block:
+
+      - name: backup configuration files
+        arubaoss_config_bkup:
+          file_name: "{{item}}"
+          config_type: CT_RUNNING_CONFIG
+        with_items:
+          - test1
+          - test2
+          - test3
+          - test4
+          - test4
+          - test5
+
+      - name: backup configuration files
+        arubaoss_config_bkup:
+          file_name: "{{item}}"
+          server_type: ST_FLASH
+        with_items:
+          - test1
+          - test2
+          - test3
+          - test4
+          - test4
+          - test5
+
+      - name: backup configuration files
+        arubaoss_config_bkup:
+          file_name: "{{item}}"
+          server_type: ST_TFTP
+          server_ip: 192.168.1.2
+          wait_for_apply: True
+        with_items:
+          - test1
+          - test2
+

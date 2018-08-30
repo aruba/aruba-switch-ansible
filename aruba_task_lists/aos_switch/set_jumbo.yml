@@ -1,0 +1,34 @@
+# Set jumbo for Vlan
+# Set API URI
+- set_fact:
+    api_url: "https://{{ ip }}/rest/v4/vlans/{{vlan}}"
+
+- name: Check if Vlan exists
+  uri:
+    url: "{{ api_url }}"
+    method: GET
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    validate_certs: no
+    status_code: 200, 400
+  register: vlandata
+
+# Set PUT Body
+- set_fact:
+    vlan_body: { "vlan_id": "{{ vlandata.json.vlan_id }}", "name": "{{ vlandata.json.name }}", "is_jumbo_enabled": True }
+- set_fact:
+    vlan_body_added: "{{ vlan_body | make_vlan_body( vlan ) }}"
+
+- name: Enable Jumbo if Vlan exits
+  uri:
+    url: "{{ api_url }}"
+    method: PUT
+    headers:
+       Cookie: '{{ switch_session.json.cookie }}'
+    body_format: json
+    body: "{{vlan_body_added}}"
+    validate_certs: no
+    status_code: 200
+  when:
+   - vlandata.status == 200

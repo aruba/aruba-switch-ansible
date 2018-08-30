@@ -1,0 +1,162 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2017 Hewlett Packard Enterprise Development LP
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+
+# Example on how to use ArubaOS-Switch Ansible Modules to configure AOS-Switches in this Project setup
+#
+# Use via:
+# ansible-playbook aoss_module_config_example.yml -e site=branchX -e state=STATUS
+#
+# Replace X with branch number you want to configure
+# Repleace STATUS with "configure" to configure the switch and "unconfigure" to undo configuration done by the configuration part
+#
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    # Store Global variables. These are also used by other plays in this playbook
+    - name: Store Global variables in localhost
+      block:
+        - set_fact:
+            site_data: "{{ hostvars[groups[site][0]] }}"
+        - set_fact:
+            sw_group_name: "{{ site_data.sw_group_name }}"  # Group for the Switches
+
+# This block will execute a set of different configurations via tasks
+- hosts: "{{ hostvars.localhost.sw_group_name }}"
+  connection: local
+  gather_facts: False
+  # This will set the needed overall variables for the modules to use the connection plugin.
+  # Normally these could be stored in the inventory but we are "migrating" them to keep a similar inventory structure for all workflows.
+  vars:
+    ansible_user: "{{ user }}"
+    ansible_password: "{{ password }}"
+    ansible_host: "{{ ip }}"
+    ansible_network_os: arubaoss
+  tasks:
+    # Configure Switch with modules
+    - block:
+        - name: Updates Hostname
+          arubaoss_system_attributes:
+            hostname: "automation_2930M_1"
+            use_ssl: True
+
+
+        - name: Configure a vlan
+          arubaoss_vlan:
+            vlan_id: 42
+            name: "vlan42"
+            config: create
+            command: config_vlan
+            use_ssl: True
+
+        - name: change loop-protect mode to vlan
+          arubaoss_loop_protect:
+            command: update
+            mode: LPM_VLAN
+            use_ssl: True
+
+        - name: enable loop-prtoect on vlan
+          arubaoss_loop_protect:
+            command: update_vlan
+            vlan: 42
+            use_ssl: True
+
+        - name: update vlan with ports
+          arubaoss_vlan:
+            vlan_id: 42
+            name: "vlan42"
+            config: create
+            command: config_vlan_port
+            port_id: "1"
+            port_mode: "POM_TAGGED_STATIC"
+            use_ssl: True
+
+        - name: update vlan with ip address
+          arubaoss_vlan:
+            vlan_id: 42
+            name: "vlan42"
+            config: create
+            command: config_vlan_ipaddress
+            vlan_ip_address: "172.20.20.1"
+            version: "IAV_IP_V4"
+            vlan_ip_mask: "255.255.255.0"
+            use_ssl: True
+
+        - name: update vlan with dhcp helper address
+          arubaoss_vlan:
+            vlan_id: 42
+            name: "vlan42"
+            config: create
+            command: config_vlan_dhcpHelperAddress
+            helper_addresses: "172.20.20.100"
+            version: "IAV_IP_V4"
+            use_ssl: True
+      when: state == "configure"
+
+    # Unconfigure Switch with modules
+    - block:
+        - name: change loop-protect mode to default
+          arubaoss_loop_protect:
+            command: update
+            use_ssl: True
+
+        - name: delete port from vlan
+          arubaoss_vlan:
+            vlan_id: 42
+            name: "vlan42"
+            config: delete
+            command: config_vlan_port
+            port_id: "1"
+            port_mode: "POM_TAGGED_STATIC"
+            use_ssl: True
+
+        - name: delete vlan ip address
+          arubaoss_vlan:
+            vlan_id: 42
+            name: "vlan42"
+            config: delete
+            command: config_vlan_ipaddress
+            vlan_ip_address: "172.20.20.1"
+            version: "IAV_IP_V4"
+            vlan_ip_mask: "255.255.255.0"
+            use_ssl: True
+
+        - name: delete vlan dhcp helper address
+          arubaoss_vlan:
+            vlan_id: 42
+            name: "vlan42"
+            config: delete
+            command: config_vlan_dhcpHelperAddress
+            helper_addresses: "172.20.20.100"
+            version: "IAV_IP_V4"
+            use_ssl: True
+
+        - name: delete vlan
+          arubaoss_vlan:
+            vlan_id: 42
+            name: "vlan42"
+            config: delete
+            command: config_vlan
+            use_ssl: True
+
+        - name: Updates Hostname to old hostname
+          arubaoss_system_attributes:
+            hostname: "branch1_2930M"
+            use_ssl: True
+
+      when: state == "unconfigure"

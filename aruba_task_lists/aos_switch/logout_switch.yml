@@ -1,0 +1,16 @@
+# Logout from ArubaOS Switch
+- name: logout from switch
+  uri:
+    url: 'https://{{ ip }}/rest/v4/login-sessions'
+    method: DELETE
+    body_format: json
+    return_content: no
+    validate_certs: no
+    headers:
+      cookie: '{{ switch_session.json.cookie }}'
+    status_code: 204
+  register: logout_response
+
+# Example
+#    - name: Logout
+#      include: aruba_task_lists/aos_switch/logout_switch.yml

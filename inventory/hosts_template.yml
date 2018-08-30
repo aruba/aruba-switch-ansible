@@ -1,0 +1,13 @@
+localhost
+
+# Repeat for all needed branches
+[branchX:children]  # Replace X by Branch Number
+branchX_switches    # Replace X by Branch Number
+branchX_cxs         # Replace X by Branch Number
+
+[branchX_switches]  # Replace X by Branch Number
+# Will be filled by create_host_vars.py in the next step
+
+[branchX_cxs] # Replace X by Branch Number
+cx-aa-bb-cc-dd-ee-f1  # Enter ArubaOS-CX-1 MAC Address separated by "-"
+cx-aa-bb-cc-dd-ee-f2  # Enter ArubaOS-CX-2 MAC Address separated by "-"

@@ -1,0 +1,1782 @@
+diff --git a/ansible/modules/network/arubaoscx/__init__.py b/ansible/modules/network/arubaoscx/__init__.py
+new file mode 100644
+index 0000000000..e69de29bb2
+diff --git a/ansible/modules/network/arubaoscx/arubaoscx_l2_interface.py b/ansible/modules/network/arubaoscx/arubaoscx_l2_interface.py
+new file mode 100644
+index 0000000000..2d897d6d1d
+--- /dev/null
++++ b/ansible/modules/network/arubaoscx/arubaoscx_l2_interface.py
+@@ -0,0 +1,409 @@
++#!/usr/bin/python
++
++ANSIBLE_METADATA = {
++    'metadata_version': '1.0',
++    'status': ['preview'],
++    'supported_by': 'community'
++}
++
++DOCUMENTATION = '''
++---
++module: arubaoscx_l2_interface
++
++version_added: "1.0"
++
++description:
++    - "This module implements Layer2 Interface configuration for ArubaOS_CX switch"
++
++options:
++    interface:
++        description: Interface name, should be alphanumeric and no more than about 8 bytes long.
++        type: string
++        required: true
++    admin_state:
++        description: Status information about interface.
++        default: 'up'
++        choices: ['up', 'down']
++        required: False
++    description:
++        description: Description of interface.
++        type: string
++        required: False
++    vlan_mode:
++        description: VLAN mode of access or trunk.
++        default: 'access'
++        choices: ['access', 'trunk']
++    vlan_id:
++        description: VLAN attached to the interface.
++        type: list
++        required: False
++    vlan_trunk_native_id:
++        description: Native ID of trunk VLAN.
++        type: string
++        required: False
++    vlan_trunk_native_tag:
++        description: Switching trunk VLAN between "native_untagged" and "native_tagged".
++        default: False
++        bool: ['true', 'false']
++        required: False
++    qos_rate:
++        description: The rate limit value configured for broadcast/multicast/unknown unicast traffic.
++        type: dictionary
++        required: False
++    qos_schedule_profile:
++        description: Attaching existing QoS schedule profile to interface.
++        type: string
++        required: False
++    aclv4_in:
++        description: Attaching ingress IPv4 ACL to interface.
++        type: string
++        required: False
++    aclv6_in:
++        description: Attaching ingress IPv6 ACL to interface.
++        type: string
++        required: False
++    aclmac_in:
++        description: Attaching ingress MAC ACL to interface.
++        type: string
++        required: False
++    state:
++        description: Create/Update or Delete interface.
++        default: 'present'
++        choices: ['present', 'absent']
++        required: False
++
++author:
++    - Aruba Networks
++'''
++
++EXAMPLES = '''
++     - name: Adding new interface
++       arubaoscx_l2_interface:
++         interface: "{{ item.interface }}"
++         description: "{{ item.description }}"
++       with_items:
++         - { interface: 1/1/3, description: 'This is interface 1/1/3' }
++         - { interface: 1/1/4, description: 'This is interface 1/1/4' }
++
++     - name: Attaching VLAN to interface
++       arubaoscx_l2_interface:
++         interface: "{{ item.interface }}"
++         vlan_mode: " {{ item.vlan_mode }}"
++         vlan_id: "{{ item.vlan_id }}"
++       with_items:
++         - { interface: 1/1/3, vlan_mode: access, vlan_id: [1] }
++         - { interface: 1/1/4, vlan_mode: trunk, vlan_id: [2,3,4] }
++
++     - name: Attaching QoS to interface
++       arubaoscx_l2_interface:
++         interface: "{{ item.interface }}"
++         vlan_mode: "{{ item.vlan_mode }}"
++         qos_rate: "{{ item.qos_rate }}"
++         qos_schedule_profile: "{{ item.qos_schedule_profile }}"
++       with_items:
++         - { interface: 1/1/3, vlan_mode: access, qos_rate: {'unknown-unicast': 100pps,
++           'broadcast': 200pps, 'multicast': 200pps}, qos_schedule_profile: dwrr }
++         - { interface: 1/1/4, vlan_mode: access, qos_rate: {'unknown-unicast': 100pps,
++           'broadcast': 200pps, 'multicast': 200pps}, qos_schedule_profile: dwrr }
++
++     - name: Attaching ACL to interface
++       arubaoscx_l2_interface:
++         interface: "{{ item.interface }}"
++         vlan_mode: "{{ item.vlan_mode }}"
++         aclv4_in: "{{ item.aclv4_in }}"
++         aclv6_in: "{{ item.aclv6_in }}"
++         aclmac_in: "{{ item.aclmac_in }}"
++       with_items:
++         - { interface: 1/1/3, vlan_mode: access, aclv4_in: ipv4test1, aclv6_in: ipv6test1, aclmac_in: mactest1 }
++         - { interface: 1/1/4, vlan_mode: access, aclv4_in: ipv4test2, aclv6_in: ipv6test2, aclmac_in: mactest2 }
++
++     - name: Adding new interface with VLAN, QoS, ACL attached
++       arubaoscx_l2_interface:
++         interface: "{{ item.interface }}"
++         description: "{{ item.description }}"
++         vlan_mode: "{{ item.vlan_mode }}"
++         vlan_id: "{{ item.vlan_id }}"
++         qos_rate: "{{ item.qos_rate }}"
++         qos_schedule_profile: "{{ item.qos_schedule_profile }}"
++         aclv4_in: "{{ item.aclv4_in }}"
++         aclv6_in: "{{ item.aclv6_in }}"
++         aclmac_in: "{{ item.aclmac_in }}"
++       with_items:
++         - { interface: 1/1/3, description: 'interface description', vlan_mode: access,
++             vlan_id: [1], qos_rate: {'unknown-unicast': 100pps, 'broadcast': 200pps, 'multicast': 200pps},
++             qos_schedule_profile: dwrr, aclv4_in: ipv4test1, aclv6_in_type: ipv6test1, aclmac_in_type: mactest1 }
++         - { interface: 1/1/4, description: 'interface description', vlan_mode: trunk,
++             vlan_id: [2,3,4], qos_rate: {'unknown-unicast': 100pps, 'broadcast': 200pps, 'multicast': 200pps},
++             qos_schedule_profile: dwrr, aclv4_in: ipv4test2, aclv6_in_type: ipv6test2, aclmac_in_type: mactest2 }
++
++     - name: Deleting interface
++       arubaoscx_l2_interface:
++         interface: "{{ item.interface }}"
++         state: "{{ item.state }}"
++       with_items:
++           - { interface: 1/1/3, state: absent }
++           - { interface: 1/1/4, state: absent }
++'''
++
++from ansible.module_utils.basic import AnsibleModule
++import json
++import re
++from ansible.module_utils.connection import Connection
++from random import randint
++
++
++'''
++Parsing the QoS rate dictionary parameter to number and unit as desired by running configuration in JSON format.
++'''
++
++
++def number_unit(s):
++    for i, c in enumerate(s):
++        if not c.isdigit():
++            break
++    number = s[:i]
++    unit = s[i:].lstrip()
++    return number, unit
++
++
++'''
++Parsing aclv4_in, aclv6_in, aclmac_in parameters to ACL name with type as desired by running configuration in JSON format.
++'''
++
++
++def add_acl(name, typ, json_data, encode_interface, get_json, warnings):
++    acl_id = name + '/' + typ
++    if typ == 'mac':
++        acl_in_cfg = 'aclmac_in_cfg'
++    elif typ == 'ipv4' or 'ipv6':
++        acl_in_cfg = 'acl' + typ[2:] + '_in_cfg'
++    if ('ACL' not in json_data.keys()) or (acl_id not in json_data["ACL"].keys()):
++        warnings.append("ACL " + acl_id + " does not exist on switch.")
++    else:
++        json_data["Port"][encode_interface][acl_in_cfg] = acl_id
++        '''
++        Generate a random number used by acl_in_cfg_version.
++        '''
++        json_data["Port"][encode_interface][acl_in_cfg + '_version'] = randint(-900719925474099, 900719925474099)
++        if acl_in_cfg + '_version' in get_json["Port"].setdefault(encode_interface, {}).keys():
++            get_json["Port"][encode_interface][acl_in_cfg + '_version'] = json_data["Port"][encode_interface][acl_in_cfg + '_version']
++
++
++def main():
++    module_args = dict(
++       interface=dict(type='str', required=True),
++       admin_state=dict(default='up', choices=['up', 'down']),
++       description=dict(type='str', default=None),
++       vlan_mode=dict(default='access', choices=['access', 'trunk']),
++       vlan_id=dict(type='list', default=None),
++       vlan_trunk_native_id=dict(type='str', default=None),
++       vlan_trunk_native_tag=dict(type='bool', default=False),
++       qos_rate=dict(type='dict', default=None),
++       qos_schedule_profile=dict(type='str', default=None),
++       aclv4_in=dict(type='str', default=None),
++       aclv6_in=dict(type='str', default=None),
++       aclmac_in=dict(type='str', default=None),
++       state=dict(default='present', choices=['present', 'absent'])
++    )
++    warnings = list()
++    result = dict(changed=False, warnings=warnings)
++    module = AnsibleModule(
++        argument_spec=module_args,
++        supports_check_mode=True
++    )
++
++    if module.check_mode:
++        module.exit_json(changed=False)
++
++    connection = Connection(module._socket_path)
++    get_response = connection.get_running_config()
++    module.log(msg=get_response)
++    interface = module.params['interface'].lower()
++    admin_state = module.params['admin_state']
++    description = module.params['description']
++    vlan_mode = module.params['vlan_mode']
++    vlan_id = module.params['vlan_id']
++    vlan_trunk_native_id = module.params['vlan_trunk_native_id']
++    vlan_trunk_native_tag = module.params['vlan_trunk_native_tag']
++    qos_rate = module.params['qos_rate']
++    qos_schedule_profile = module.params['qos_schedule_profile']
++    aclv4_in = module.params['aclv4_in']
++    aclv6_in = module.params['aclv6_in']
++    aclmac_in = module.params['aclmac_in']
++    state = module.params['state']
++
++    try:
++        json_data = json.loads(get_response)
++    except ValueError:
++        module.fail_json(msg=get_response)
++
++    '''
++    Verify if input interface string is valid
++    '''
++    if (len(interface.encode('utf-8')) > 8) or (not bool(re.match('^[a-zA-Z0-9/]+$', interface))):
++        module.fail_json(msg='Interface is not valid.')
++
++    '''
++    Deleting interface
++    '''
++    if state == 'absent':
++        get_json = json.loads(get_response)
++        encode_interface = interface.replace('/', '%2F')
++        if encode_interface in json_data["Port"].keys():
++            json_data["Port"].pop(encode_interface)
++            json_data["System"]["bridge"]["Bridge1"]["ports"].remove(encode_interface)
++            if "Interface" in json_data.keys():
++                if encode_interface in json_data["Interface"].keys():
++                    json_data["Interface"].pop(encode_interface)
++        else:
++            warnings.append("Interface " + interface + " has already been removed.")
++
++    '''
++    Adding interface
++    '''
++    if state == 'present':
++        get_json = json.loads(get_response)
++        if interface is not None:
++            encode_interface = interface.replace('/', '%2F')
++            json_data["Port"].setdefault(encode_interface, {})["name"] = interface
++            if encode_interface not in json_data["Port"][encode_interface].setdefault("interfaces", []):
++                json_data["Port"][encode_interface]["interfaces"].append(encode_interface)
++            if "default" in json_data["System"]["vrfs"].keys():
++                if encode_interface not in json_data["System"]["vrfs"]["default"]["ports"]:
++                    json_data["System"]["vrfs"]["default"].setdefault("ports", []).append(encode_interface)
++            else:
++                json_data["System"]["vrfs"]["default"] = {"name": "default", "ports": [encode_interface]}
++            module.log(msg='Added Interface: ' + interface)
++
++        if admin_state == "up":
++            json_data["Port"][encode_interface]["admin"] = "up"
++            json_data.setdefault("Interface", {})[encode_interface] = {"name": interface, "user_config": {"admin": "up"}}
++        elif admin_state == "down":
++            json_data["Port"][encode_interface]["admin"] = "down"
++            json_data.setdefault("Interface", {})[encode_interface] = {"name": interface, "user_config": {"admin": "down"}}
++
++        if description is not None:
++            encode_interface = interface.replace('/', '%2F')
++            json_data["Interface"][encode_interface]["description"] = description
++            module.log(msg="Added interface with name='" + interface + "' description='" + description + "'")
++
++        '''
++        Attaching access VLAN to interface
++        '''
++        if (vlan_mode == 'access') and (vlan_id is not None):
++            vlan_id = vlan_id[0]
++            if "vlans" not in json_data["System"]["bridge"]["Bridge1"].keys():
++                warnings.append('VLAN ' + str(vlan_id) + ' does not exist on switch.')
++            elif str(vlan_id) not in json_data["System"]["bridge"]["Bridge1"]["vlans"].keys():
++                warnings.append('VLAN ' + str(vlan_id) + ' does not exist on switch.')
++            else:
++                json_data["Port"][encode_interface]["vlan_mode"] = "access"
++                json_data["Port"][encode_interface]["vlan_tag"] = str(vlan_id)
++            if encode_interface not in json_data["System"]["bridge"]["Bridge1"]["ports"]:
++                json_data["System"]["bridge"]["Bridge1"]["ports"].append(encode_interface)
++            if encode_interface in json_data["System"]["vrfs"].get("default", {}).get("ports", []):
++                json_data["System"]["vrfs"]["default"]["ports"].remove(encode_interface)
++                if not json_data["System"]["vrfs"]["default"]["ports"]:
++                    json_data["System"]["vrfs"].pop("default")
++            module.log(msg='Attached interface ' + interface + ' to access VLAN ' + str(vlan_id))
++
++        '''
++        Attaching trunk VLAN to interface
++        '''
++        if (vlan_mode == 'trunk') and (vlan_id is not None):
++            if "vlan_trunks" in json_data["Port"][encode_interface].keys():
++                json_data["Port"][encode_interface]["vlan_trunks"] = []
++            if encode_interface not in json_data["System"]["bridge"]["Bridge1"]["ports"]:
++                json_data["System"]["bridge"]["Bridge1"]["ports"].append(encode_interface)
++            if encode_interface in json_data["System"]["vrfs"].get("default", {}).get("ports", []):
++                json_data["System"]["vrfs"]["default"]["ports"].remove(encode_interface)
++                if not json_data["System"]["vrfs"]["default"]["ports"]:
++                    json_data["System"]["vrfs"].pop("default")
++            for vid in vlan_id:
++                if ("vlans" not in json_data["System"]["bridge"]["Bridge1"].keys()) and (vid != 1):
++                    warnings.append('VLAN ' + str(vid) + ' does not exist on switch.')
++                elif (str(vid) not in json_data["System"]["bridge"]["Bridge1"].get("vlans", {}).keys()) and (vid != 1):
++                    warnings.append('VLAN ' + str(vid) + ' does not exist on switch.')
++                else:
++                    json_data["Port"][encode_interface]["vlan_mode"] = "native-untagged"
++                    json_data["Port"][encode_interface]["vlan_tag"] = "1"
++                    json_data["Port"][encode_interface].setdefault("vlan_trunks", []).append(str(vid))
++                    module.log(msg='Attached interface ' + interface + ' to trunk VLAN ' + str(vid))
++                    if vlan_trunk_native_tag:
++                        json_data["Port"][encode_interface]["vlan_mode"] = "native-tagged"
++                    if (vlan_trunk_native_id is not None) and\
++                            (vlan_trunk_native_id in json_data["System"]["bridge"]["Bridge1"].get("vlans", {}).keys()):
++                        json_data["Port"][encode_interface]["vlan_tag"] = vlan_trunk_native_id
++
++        if (vlan_mode is not None) and (vlan_id is None):
++            module.fail_json(msg='Missing vlan_id')
++        elif (vlan_mode is None) and (vlan_id is not None):
++            module.fail_json(msg='Missing vlan_mode')
++
++        '''
++        Attaching QoS rate to interface
++        '''
++        if qos_rate is not None:
++            for k, v in qos_rate.items():
++                number, unit = number_unit(v)
++                json_data["Port"][encode_interface].setdefault("rate_limits", {})[k] = number
++                json_data["Port"][encode_interface].setdefault("rate_limits", {})[k + '_units'] = unit
++            module.log(msg='Applied QoS_rate ' + json.dumps(qos_rate) + ' to inteface ' + interface)
++
++        '''
++        Attaching QoS schedule profile to interface
++        '''
++        if qos_schedule_profile is not None:
++            if "QoS" not in json_data.keys():
++                warnings.append('QoS_schedule_profile ' + qos_schedule_profile + ' does not exist on switch.')
++            elif qos_schedule_profile not in json_data["QoS"].keys():
++                warnings.append('QoS_schedule_profile ' + qos_schedule_profile + ' does not exist on switch.')
++            else:
++                json_data["Port"][encode_interface]["qos"] = qos_schedule_profile
++                module.log(msg='Attached QoS_schedule_profile ' + qos_schedule_profile + ' to interface ' + interface)
++
++        '''
++        Attaching ACL to interface
++        '''
++        if (aclv6_in is not None) or (aclv4_in is not None) or (aclmac_in is not None):
++            if "aclv4_in_cfg" in json_data["Port"][encode_interface].keys():
++                json_data["Port"][encode_interface].pop("aclv4_in_cfg")
++                json_data["Port"][encode_interface]["aclv4_in_cfg_version"] = randint(-900719925474099, 900719925474099)
++            if "aclv6_in_cfg" in json_data["Port"][encode_interface].keys():
++                json_data["Port"][encode_interface].pop("aclv6_in_cfg")
++                json_data["Port"][encode_interface]["aclv6_in_cfg_version"] = randint(-900719925474099, 900719925474099)
++            if "aclmac_in_cfg" in json_data["Port"][encode_interface].keys():
++                json_data["Port"][encode_interface].pop("aclmac_in_cfg")
++                json_data["Port"][encode_interface]["aclmac_in_cfg_version"] = randint(-900719925474099, 900719925474099)
++        if aclv6_in is not None:
++            add_acl(aclv6_in, 'ipv6', json_data, encode_interface, get_json, warnings)
++        if aclv4_in is not None:
++            add_acl(aclv4_in, 'ipv4', json_data, encode_interface, get_json, warnings)
++        if aclmac_in is not None:
++            add_acl(aclmac_in, 'mac', json_data, encode_interface, get_json, warnings)
++
++    '''
++    Updating running config on remote switch
++    '''
++    connection.put_running_config(json.dumps(json_data))
++
++    '''
++    Writing Debugging File
++    '''
++    with open('/tmp/debugging_running_config.json', 'w') as to_file:
++        json.dump(json_data, to_file, indent=4)
++        to_file.write("\n")
++
++    '''
++    Checking if change is idempotent
++    '''
++    if get_json != json_data:
++        result["changed"] = True
++    else:
++        module.log(msg="========Nothing Changed=========")
++
++    module.exit_json(**result)
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/ansible/modules/network/arubaoscx/arubaoscx_l3_interface.py b/ansible/modules/network/arubaoscx/arubaoscx_l3_interface.py
+new file mode 100644
+index 0000000000..a4246ee55e
+--- /dev/null
++++ b/ansible/modules/network/arubaoscx/arubaoscx_l3_interface.py
+@@ -0,0 +1,488 @@
++#!/usr/bin/python
++
++ANSIBLE_METADATA = {
++    'metadata_version': '1.0',
++    'status': ['preview'],
++    'supported_by': 'community'
++}
++
++DOCUMENTATION = '''
++---
++module: arubaoscx_l3_interface
++
++version_added: "1.0"
++
++description:
++    - "This module implements Layer3 interface configuration for ArubaOS_CX switch"
++
++options:
++    interface:
++        description: Interface name, should be alphanumeric and no more than about 8 bytes long.
++        type: string
++        required: true
++    admin_state:
++        description: Status information about interface.
++        default: 'up'
++        choices: ['up', 'down']
++        required: False
++    description:
++        description: Description of interface.
++        type: string
++        required: False
++    ipv4:
++        description: The IPv4 address and subnet mask in the address/mask format.
++                     The first entry in the list is the primary IPv4, the remainings are secondary IPv4.
++        type: list
++        required: False
++    ipv6:
++        description: The IPv6 address and subnet mask in the address/mask format.
++                     It takes multiple IPv6 with comma separated in the list.
++        type: list
++        required: False
++    qos_rate:
++        description: The rate limit value configured for broadcast/multicast/unknown unicast traffic.
++        type: dictionary
++        required: False
++    qos_schedule_profile:
++        description: Attaching existing QoS schedule profile to interface.
++        type: string
++        required: False
++    aclv4_in:
++        description: Attaching ingress IPv4 ACL to interface.
++        type: string
++        required: False
++    aclv6_in:
++        description: Attaching ingress IPv6 ACL to interface.
++        type: string
++        required: False
++    aclmac_in:
++        description: Attaching ingress MAC ACL to interface.
++        type: string
++        required: False
++    aclv4_out:
++        description: Attaching egress IPv4 ACL to interface.
++        type: string
++        required: False
++    vrf:
++        description: Attaching interface to VRF, commonly known as Virtual Routing and Forwarding.
++                     The interface will be attached to default vrf if not specified.
++        type: string
++        required: False
++    ip_helper_address:
++        description: Configure a remote DHCP server/relay IP address on the device interface. Here the
++                     helper address is same as the DHCP server address or another intermediate DHCP relay.
++        type: list
++        required: False
++    state:
++        description: Create/Update or Delete interface
++        default: 'present'
++        choices: ['present', 'absent']
++        required: False
++
++author:
++    - Aruba Networks
++'''
++
++EXAMPLES = '''
++     - name: Adding new interface
++       arubaoscx_l3_interface:
++         interface: "{{ item.interface }}"
++         description: "{{ item.description }}"
++       with_items:
++         - { interface: 1/1/3, description: 'This is interface 1/1/3' }
++         - { interface: 1/1/4, description: 'This is interface 1/1/4' }
++
++     - name: Attaching IP addresses to interface
++       arubaoscx_l3_interface:
++         interface: "{{ item.interface }}"
++         ipv4: "{{ item.ipv4 }}"
++         ipv6: "{{ item.ipv6 }}"
++       with_items:
++         - { interface: 1/1/3, ipv4: ['1.2.3.4/24', '1.3.4.5/24'], ipv6: ['2000:db8::1234/32', '2001:db8::1234/32'] }
++         - { interface: 1/1/4, ipv4: ['1.4.5.6/24', '1.5.6.7/24'], ipv6: ['2002:db8::1234/32', '2003:db8::1234/32'] }
++
++     - name: Attaching QoS to interface
++       arubaoscx_l3_interface:
++         interface: "{{ item.interface }}"
++         qos_rate: "{{ item.qos_rate }}"
++         qos_schedule_profile: "{{ item.qos_schedule_profile }}"
++       with_items:
++         - { interface: 1/1/3, qos_rate: {'unknown-unicast': 100pps, 'broadcast': 200pps, 'multicast': 200pps}, qos_schedule_profile: dwrr }
++         - { interface: 1/1/4, qos_rate: {'unknown-unicast': 100pps, 'broadcast': 200pps, 'multicast': 200pps}, qos_schedule_profile: dwrr }
++
++     - name: Attaching ACL to interface
++       arubaoscx_l3_interface:
++         interface: "{{ item.interface }}"
++         aclv4_in: "{{ item.aclv4_in }}"
++         aclv6_in: "{{ item.aclv6_in }}"
++         aclmac_in: "{{ item.aclmac_in }}"
++         aclv4_out: "{{ item.aclv4_out }}"
++       with_items:
++         - { interface: 1/1/3, aclv4_in: ipv4test1, aclv6_in: ipv6test1, aclmac_in: mactest1, aclv4_out: ipv4egress1 }
++         - { interface: 1/1/4, aclv4_in: ipv4test2, aclv6_in: ipv6test2, aclmac_in: mactest2, aclv4_out: ipv4egress2 }
++
++     - name: Attaching user configured VRF to interface
++       arubaoscx_l3_interface:
++         interface: "{{ item.interface }}"
++         vrf: "{{ item.vrf }}"
++       with_items:
++         - { interface: 1/1/3, vrf: myvrf }
++         - { interface: 1/1/4, vrf: myvrf }
++
++     - name: Attaching IP helper address to interface
++       arubaoscx_l3_interface:
++         interface: "{{ item.interface }}"
++         ip_helper_address: "{{ item.ip_helper_address }}"
++       with_items:
++         - { interface: 1/1/3, ip_helper_address: ['5.6.7.8', '10.10.10.10'] }
++         - { interface: 1/1/4, ip_helper_address: 1.2.3.4 }
++
++     - name: Adding new interface with IP, QoS, ACL, VRF attached
++       arubaoscx_l3_interface:
++         interface: "{{ item.interface }}"
++         description: "{{ item.description }}"
++         ipv4: "{{ item.ipv4 }}"
++         ipv6: "{{ item.ipv6 }}"
++         qos_rate: "{{ item.qos_rate }}"
++         qos_schedule_profile: "{{ item.qos_schedule_profile }}"
++         aclv4_in: "{{ item.aclv4_in }}"
++         aclv6_in: "{{ item.aclv6_in }}"
++         aclmac_in: "{{ item.aclmac_in }}"
++         aclv4_out: "{{ item.aclv4_out }}"
++         vrf: "{{ item.vrf }}"
++         ip_helper_address: "{{ item.ip_helper_address }}"
++       with_items:
++         - { interface: 1/1/3, description: 'This is interface 1/1/3',
++             ipv4: ['1.2.3.4/24'], ipv6: ['2001:db8::1234/32'],
++             qos_rate: {'unknown-unicast': 100pps, 'broadcast': 200pps, 'multicast': 200pps},
++             qos_schedule_profile: dwrr, aclv4_in: ipv4test1, aclv6_in_type: ipv6test1,
++             aclmac_in_type: mactest1, aclv4_out: ipv4egress1, vrf: myvrf, ip_helper_address: 10.10.10.10 }
++         - { interface: 1/1/4, description: 'This is interface 1/1/4',
++             ipv4: ['1.3.4.5/24'], ipv6: ['2001:db7::1234/32'],
++             qos_rate: {'unknown-unicast': 100pps, 'broadcast': 200pps, 'multicast': 200pps},
++             qos_schedule_profile: dwrr, aclv4_in: ipv4test2, aclv6_in_type: ipv6test2,
++             aclmac_in_type: mactest2, aclv4_out: ipv4egress2, vrf: myvrf, ip_helper_address: 10.10.10.10 }
++
++     - name: Deleting interface
++       arubaoscx_l3_interface:
++         interface: "{{ item.interface }}"
++         state: "{{ item.state }}"
++       with_items:
++           - { interface: 1/1/3, state: absent }
++           - { interface: 1/1/4, state: absent }
++'''
++
++from ansible.module_utils.basic import AnsibleModule
++import json
++import re
++import sys
++import ipaddress
++from ansible.module_utils.connection import Connection
++from random import randint
++
++
++'''
++Vefiry if the input IP address is valid.
++'''
++
++
++def valid_ip(ip):
++    try:
++        if sys.version_info[0] == 2:
++            ipaddress.ip_network(ip.strip().decode("utf-8"), strict=True)
++        elif sys.version_info[0] == 3:
++            ipaddress.ip_network(bytes(ip.strip().encode("utf-8")), strict=True)
++        return True
++    except Exception:
++        return False
++
++
++'''
++Parsing the QoS rate dictionary parameter to number and unit as desired by running configuration in JSON format.
++'''
++
++
++def number_unit(s):
++    for i, c in enumerate(s):
++        if not c.isdigit():
++            break
++    number = s[:i]
++    unit = s[i:].lstrip()
++    return number, unit
++
++
++'''
++Parsing aclv4_in, aclv6_in, aclmac_in parameters to ACL name with type as desired by running configuration in JSON format.
++'''
++
++
++def add_acl(name, typ, json_data, encode_interface, get_json, warnings):
++    iptype = typ.replace('in', '').replace('out', '')
++    acl_id = name + '/' + iptype
++    if iptype == 'mac':
++        acl_in_cfg = 'aclmac_in_cfg'
++    elif iptype == 'ipv4' or 'ipv6':
++        acl_in_cfg = 'acl' + iptype[2:] + '_in_cfg'
++        acl_out_cfg = 'acl' + iptype[2:] + '_out_cfg'
++    if ('ACL' not in json_data.keys()) or (acl_id not in json_data["ACL"].keys()):
++        warnings.append("ACL " + acl_id + " does not exist on switch.")
++    elif 'in' in typ:
++        json_data["Port"][encode_interface][acl_in_cfg] = acl_id
++        json_data["Port"][encode_interface][acl_in_cfg + '_version'] = randint(-900719925474099, 900719925474099)
++        if acl_in_cfg + '_version' in get_json["Port"].setdefault(encode_interface, {}).keys():
++            get_json["Port"][encode_interface][acl_in_cfg + '_version'] = json_data["Port"][encode_interface][acl_in_cfg + '_version']
++    elif 'out' in typ:
++        json_data["Port"][encode_interface][acl_out_cfg] = acl_id
++        json_data["Port"][encode_interface][acl_out_cfg + '_version'] = randint(-900719925474099, 900719925474099)
++        if acl_out_cfg + '_version' in get_json["Port"].setdefault(encode_interface, {}).keys():
++            get_json["Port"][encode_interface][acl_out_cfg + '_version'] = json_data["Port"][encode_interface][acl_out_cfg + '_version']
++
++
++def main():
++    module_args = dict(
++       interface=dict(type='str', required=True),
++       admin_state=dict(default='up', choices=['up', 'down']),
++       description=dict(type='str', default=None),
++       ipv4=dict(type='list', default=None),
++       ipv6=dict(type='list', default=None),
++       qos_rate=dict(type='dict', default=None),
++       qos_schedule_profile=dict(type='str', default=None),
++       aclv4_in=dict(type='str', default=None),
++       aclv6_in=dict(type='str', default=None),
++       aclmac_in=dict(type='str', default=None),
++       aclv4_out=dict(type='str', default=None),
++       vrf=dict(type='str', default=None),
++       ip_helper_address=dict(type='list', default=None),
++       state=dict(default='present', choices=['present', 'absent'])
++    )
++    warnings = list()
++    result = dict(changed=False, warnings=warnings)
++    module = AnsibleModule(
++        argument_spec=module_args,
++        supports_check_mode=True
++    )
++
++    if module.check_mode:
++        module.exit_json(changed=False)
++
++    connection = Connection(module._socket_path)
++    get_response = connection.get_running_config()
++    module.log(msg=get_response)
++    interface = module.params['interface']
++    admin_state = module.params['admin_state']
++    description = module.params['description']
++    ipv4 = module.params['ipv4']
++    ipv6 = module.params['ipv6']
++    qos_rate = module.params['qos_rate']
++    qos_schedule_profile = module.params['qos_schedule_profile']
++    aclv4_in = module.params['aclv4_in']
++    aclv6_in = module.params['aclv6_in']
++    aclmac_in = module.params['aclmac_in']
++    aclv4_out = module.params['aclv4_out']
++    vrf = module.params['vrf']
++    ip_helper_address = module.params['ip_helper_address']
++    state = module.params['state']
++
++    try:
++        json_data = json.loads(get_response)
++    except ValueError:
++        module.fail_json(msg=get_response)
++
++    '''
++    Verify if input interface string is valid
++    '''
++    if (len(interface.encode('utf-8')) > 8) or (not bool(re.match('^[a-zA-Z0-9/]+$', interface))):
++        module.fail_json(msg='Interface is not valid.')
++
++    '''
++    Deleting interface
++    '''
++    if state == 'absent':
++        get_json = json.loads(get_response)
++        encode_interface = interface.replace('/', '%2F')
++        if encode_interface in json_data["Port"].keys():
++            json_data["Port"].pop(encode_interface)
++        else:
++            warnings.append("Interface " + interface + " has already been removed.")
++        if encode_interface in json_data["System"]["bridge"]["Bridge1"]["ports"]:
++            json_data["System"]["bridge"]["Bridge1"]["ports"].remove(encode_interface)
++        if "Interface" in json_data.keys():
++            if encode_interface in json_data["Interface"].keys():
++                json_data["Interface"].pop(encode_interface)
++        for item in json_data["System"]["vrfs"].keys():
++            if encode_interface in json_data["System"]["vrfs"][item].get("ports", []):
++                json_data["System"]["vrfs"][item].get("ports", []).remove(encode_interface)
++
++    '''
++    Adding interface
++    '''
++    if state == 'present':
++        get_json = json.loads(get_response)
++        if interface is not None:
++            encode_interface = interface.replace('/', '%2F')
++            json_data["Port"].setdefault(encode_interface, {})["name"] = interface
++            if encode_interface not in json_data["Port"][encode_interface].setdefault("interfaces", []):
++                json_data["Port"][encode_interface]["interfaces"].append(encode_interface)
++            if "default" in json_data["System"]["vrfs"].keys():
++                if encode_interface not in json_data["System"]["vrfs"]["default"]["ports"]:
++                    json_data["System"]["vrfs"]["default"].setdefault("ports", []).append(encode_interface)
++            else:
++                json_data["System"]["vrfs"]["default"] = {"name": "default", "ports": [encode_interface]}
++            module.log(msg='Added Interface: ' + interface)
++
++        if admin_state == "up":
++            json_data["Port"][encode_interface]["admin"] = "up"
++            json_data.setdefault("Interface", {})[encode_interface] = {"name": interface, "user_config": {"admin": "up"}}
++        elif admin_state == "down":
++            json_data["Port"][encode_interface]["admin"] = "down"
++            json_data.setdefault("Interface", {})[encode_interface] = {"name": interface, "user_config": {"admin": "down"}}
++
++        if description is not None:
++            encode_interface = interface.replace('/', '%2F')
++            json_data["Interface"][encode_interface]["description"] = description
++            module.log(msg="Added interface with name='" + interface + "' description='" + description + "'")
++
++        '''
++        Attaching IPv4 address to interface
++        '''
++        if ipv4 is not None:
++            json_data["Port"][encode_interface]["ip4_address"] = ipv4[0]
++            if len(ipv4) > 2:
++                json_data["Port"][encode_interface]["ip4_address_secondary"] = []
++                for item in ipv4[1:]:
++                    json_data["Port"][encode_interface]["ip4_address_secondary"].append(item)
++            elif len(ipv4) == 2:
++                json_data["Port"][encode_interface]["ip4_address_secondary"] = ipv4[1]
++            if encode_interface in json_data["System"]["bridge"]["Bridge1"]["ports"]:
++                json_data["System"]["bridge"]["Bridge1"]["ports"].remove(encode_interface)
++            if "default" not in json_data["System"]["vrfs"].keys():
++                json_data["System"]["vrfs"]["default"] = {"name": "default", "ports": [encode_interface]}
++            elif encode_interface not in json_data["System"]["vrfs"].get("default", {}).get("ports", []):
++                json_data["System"]["vrfs"]["default"]["ports"].append(encode_interface)
++            module.log(msg='Attached IPv4 address ' + ''.join(ipv4) + ' to interface ' + interface)
++
++        '''
++        Attaching IPv6 address to interface
++        '''
++        if ipv6 is not None:
++            if "ip6_addresses" in json_data["Port"][encode_interface].keys():
++                json_data["Port"][encode_interface]["ip6_addresses"] = {}
++            for item in ipv6:
++                json_data["Port"][encode_interface].setdefault("ip6_addresses", {})[item] =\
++                    {"node_address": True, "preferred_lifetime": 604800, "ra_prefix": True, "type": "global-unicast", "valid_lifetime": 2592000}
++            if encode_interface in json_data["System"]["bridge"]["Bridge1"]["ports"]:
++                json_data["System"]["bridge"]["Bridge1"]["ports"].remove(encode_interface)
++            if "default" not in json_data["System"]["vrfs"].keys():
++                json_data["System"]["vrfs"]["default"] = {"name": "default", "ports": [encode_interface]}
++            elif encode_interface not in json_data["System"]["vrfs"].get("default", {}).get("ports", []):
++                json_data["System"]["vrfs"]["default"]["ports"].append(encode_interface)
++            module.log(msg='Attached IPv6 address ' + ' '.join(ipv6) + ' to interface ' + interface)
++
++        '''
++        Adding QoS_rate to interface
++        '''
++        if qos_rate is not None:
++            for k, v in qos_rate.items():
++                number, unit = number_unit(v)
++                json_data["Port"][encode_interface].setdefault("rate_limits", {})[k] = number
++                json_data["Port"][encode_interface].setdefault("rate_limits", {})[k + '_units'] = unit
++            module.log(msg='Applied QoS_rate ' + json.dumps(qos_rate) + ' to inteface ' + interface)
++
++        '''
++        Attaching QoS_schedule_profile to interface
++        '''
++        if qos_schedule_profile is not None:
++            if "QoS" not in json_data.keys():
++                warnings.append('QoS_schedule_profile ' + qos_schedule_profile + ' does not exist on switch.')
++            elif qos_schedule_profile not in json_data["QoS"].keys():
++                warnings.append('QoS_schedule_profile ' + qos_schedule_profile + ' does not exist on switch.')
++            else:
++                json_data["Port"][encode_interface]["qos"] = qos_schedule_profile
++                module.log(msg='Applied QoS_schedule_profile ' + qos_schedule_profile + ' to interface ' + interface)
++
++        '''
++        Attaching ACL to interface
++        '''
++        if (aclv6_in is not None) or (aclv4_in is not None) or (aclmac_in is not None) or (aclv4_out is not None):
++            if "aclv4_in_cfg" in json_data["Port"][encode_interface].keys():
++                json_data["Port"][encode_interface].pop("aclv4_in_cfg")
++                json_data["Port"][encode_interface]["aclv4_in_cfg_version"] = randint(-900719925474099, 900719925474099)
++            if "aclv6_in_cfg" in json_data["Port"][encode_interface].keys():
++                json_data["Port"][encode_interface].pop("aclv6_in_cfg")
++                json_data["Port"][encode_interface]["aclv6_in_cfg_version"] = randint(-900719925474099, 900719925474099)
++            if "aclmac_in_cfg" in json_data["Port"][encode_interface].keys():
++                json_data["Port"][encode_interface].pop("aclmac_in_cfg")
++                json_data["Port"][encode_interface]["aclmac_in_cfg_version"] = randint(-900719925474099, 900719925474099)
++            if "aclv4_out_cfg" in json_data["Port"][encode_interface].keys():
++                json_data["Port"][encode_interface].pop("aclv4_out_cfg")
++                json_data["Port"][encode_interface]["aclv4_out_cfg_version"] = randint(-900719925474099, 900719925474099)
++        if aclv4_in is not None:
++            add_acl(aclv4_in, 'ipv4in', json_data, encode_interface, get_json, warnings)
++        if aclv6_in is not None:
++            add_acl(aclv6_in, 'ipv6in', json_data, encode_interface, get_json, warnings)
++        if aclmac_in is not None:
++            add_acl(aclmac_in, 'macin', json_data, encode_interface, get_json, warnings)
++        if aclv4_out is not None:
++            add_acl(aclv4_out, 'ipv4out', json_data, encode_interface, get_json, warnings)
++
++        '''
++        Attaching interface to non-default VRF
++        '''
++        if vrf is not None:
++            if vrf not in json_data["System"]["vrfs"].keys():
++                warnings.append('VRF ' + vrf + ' does not exist on switch.')
++            elif encode_interface not in json_data["System"]["vrfs"][vrf].get("ports", []):
++                json_data["System"]["vrfs"][vrf].setdefault("ports", []).append(encode_interface)
++                if vrf != 'default' and (encode_interface in json_data["System"]["vrfs"].get("default", {}).get("ports", [])):
++                    json_data["System"]["vrfs"]["default"]["ports"].remove(encode_interface)
++                    if not json_data["System"]["vrfs"]["default"]["ports"]:
++                        json_data["System"]["vrfs"].pop("default")
++                module.log(msg='Attached interface ' + interface + ' to VRF ' + vrf)
++            elif encode_interface in json_data["System"]["vrfs"][vrf].get("ports", []):
++                if vrf != 'default' and (encode_interface in json_data["System"]["vrfs"].get("default", {}).get("ports", [])):
++                    json_data["System"]["vrfs"]["default"]["ports"].remove(encode_interface)
++                    if not json_data["System"]["vrfs"]["default"]["ports"]:
++                        json_data["System"]["vrfs"].pop("default")
++
++        '''
++        Attaching helper-address to interface
++        '''
++        if ip_helper_address is not None:
++            if (vrf is not None) and (vrf in json_data["System"]["vrfs"].keys()):
++                vrf_dhcp = vrf
++            else:
++                vrf_dhcp = "default"
++            dhcp_name = vrf_dhcp + "/" + encode_interface.replace('%2F', '%252F')
++            if len(ip_helper_address) <= 1:
++                json_data.setdefault("DHCP_Relay", {})[dhcp_name] = {"ipv4_ucast_server": ip_helper_address[0], "port": encode_interface, "vrf": vrf_dhcp}
++            else:
++                json_data.setdefault("DHCP_Relay", {})[dhcp_name] = {"ipv4_ucast_server": [], "port": encode_interface, "vrf": vrf_dhcp}
++                for item in ip_helper_address:
++                    json_data["DHCP_Relay"][dhcp_name]["ipv4_ucast_server"].append(item)
++                    json_data["DHCP_Relay"][dhcp_name]["ipv4_ucast_server"].sort()
++
++    '''
++    Updating running config on remote switch
++    '''
++    connection.put_running_config(json.dumps(json_data))
++
++    '''
++    Writing Debugging File
++    '''
++    with open('/tmp/debugging_running_config.json', 'w') as to_file:
++        json.dump(json_data, to_file, indent=4)
++        to_file.write("\n")
++
++    '''
++    Checking if change is idempotent
++    '''
++    if get_json != json_data:
++        result["changed"] = True
++    else:
++        module.log(msg="========Nothing Changed=========")
++
++    module.exit_json(**result)
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/ansible/modules/network/arubaoscx/arubaoscx_vlan.py b/ansible/modules/network/arubaoscx/arubaoscx_vlan.py
+new file mode 100644
+index 0000000000..bdadfb6988
+--- /dev/null
++++ b/ansible/modules/network/arubaoscx/arubaoscx_vlan.py
+@@ -0,0 +1,215 @@
++#!/usr/bin/python
++
++ANSIBLE_METADATA = {
++    'metadata_version': '1.0',
++    'status': ['preview'],
++    'supported_by': 'community'
++}
++
++DOCUMENTATION = '''
++---
++module: arubaoscx_vlan
++
++version_added: "1.0"
++
++description:
++    - "This module implements VLAN configuration for ArubaOS_CX switch"
++
++options:
++    vlan_id:
++        description: The ID of this VLAN. Non-internal VLANs must have an 'id'
++                     betwen 1 and 4094 to be effectively instantiated.
++        required: true
++    name:
++        description: VLAN name
++        required: false
++    description:
++        description: VLAN description
++        required: false
++    interfaces:
++        description: Interfaces attached to VLAN
++        required: False
++    state:
++        description: Create/Update or Delete VLAN
++        default: present
++        choices: ['present', 'absent']
++        required: False
++
++author:
++    - Aruba Networks
++'''
++
++EXAMPLES = '''
++     - name: Adding new VLAN
++       arubaoscx_vlan:
++         vlan_id: "{{ item.vlan_id }}"
++         name: "{{ item.name }}"
++         description: "{{ item.description }}"
++       with_items:
++           - { vlan_id: 2, name: VLAN2, description: 'This is VLAN2' }
++           - { vlan_id: 3, name: VLAN3, description: 'This is VLAN3' }
++
++     - name: Attaching interfaces to VLAN
++       arubaoscx_vlan:
++         vlan_id: "{{ item.vlan_id }}"
++         interfaces: "{{ item.interfaces }}"
++       with_items:
++           - { vlan_id: 2, interfaces: ['1/1/3', '1/1/4'] }
++           - { vlan_id: 3, interfaces: ['1/1/5', '1/1/6'] }
++
++     - name: Adding new VLAN with name, description and interfaces
++       arubaoscx_vlan:
++         vlan_id: "{{ item.vlan_id }}"
++         name: "{{ item.name }}"
++         description: "{{ item.description }}"
++         interfaces: "{{ item.interfaces }}"
++       with_items:
++           - { vlan_id: 2, name: VLAN2, description: 'This is VLAN2',
++               interfaces: ['1/1/3', '1/1/4'] }
++           - { vlan_id: 3, name: VLAN3, description: 'This is VLAN3',
++               interfaces: ['1/1/5', '1/1/6'] }
++
++     - name: Deleting VLAN
++       arubaoscx_vlan:
++         vlan_id: "{{ item.vlan_id }}"
++         state: "{{ item.state }}"
++       with_items:
++           - { vlan_id: 2, state: absent }
++           - { vlan_id: 3, state: absent }
++'''
++
++from ansible.module_utils.basic import AnsibleModule
++from ansible.module_utils.connection import Connection
++import json
++import re
++
++
++def main():
++    module_args = dict(
++        vlan_id=dict(type='int', required=True),
++        name=dict(type='str', default=None),
++        description=dict(type='str', default=None),
++        interfaces=dict(type='list', default=None),
++        state=dict(default='present', choices=['present', 'absent'])
++    )
++    warnings = list()
++    result = dict(changed=False, warnings=warnings)
++    module = AnsibleModule(
++        argument_spec=module_args,
++        supports_check_mode=True
++    )
++
++    if module.check_mode:
++        module.exit_json(changed=False)
++
++    connection = Connection(module._socket_path)
++    get_response = connection.get_running_config()
++    module.log(msg=get_response)
++    vid = module.params['vlan_id']
++    name = module.params['name']
++    description = module.params['description']
++    interfaces = module.params['interfaces']
++    state = module.params['state']
++    try:
++        json_data = json.loads(get_response)
++    except ValueError:
++        module.fail_json(msg=get_response)
++
++    get_json = json.loads(get_response)
++
++    '''
++    Deleting VLAN
++    '''
++    if state == 'absent':
++        if "vlans" in json_data["System"]["bridge"]["Bridge1"].keys():
++            if str(vid) in json_data["System"]["bridge"]["Bridge1"]["vlans"]\
++                           .keys():
++                json_data["System"]["bridge"]["Bridge1"]["vlans"].pop(str(vid))
++                for item in json_data["Port"].values():
++                    for v in item.values():
++                        if v == str(vid):
++                            item.pop("vlan_tag")
++            else:
++                warnings.append("VLAN " + str(vid) + " has already been removed")
++        warnings.append("All VLANs have already been removed")
++
++    '''
++    Adding new VLAN
++    '''
++    if state == "present":
++        if "vlans" not in json_data["System"]["bridge"]["Bridge1"].keys():
++            json_data["System"]["bridge"]["Bridge1"]["vlans"] = {}
++        if str(vid) in json_data["System"]["bridge"]["Bridge1"]["vlans"].keys():
++            module.log("VLAN " + str(vid) + " already exist.")
++        if name is not None:
++            json_data["System"]["bridge"]["Bridge1"]["vlans"][str(vid)] = \
++                {"admin": "up", "id": vid, "type": "static", "name": name}
++            module.log(msg="Added VLAN " + str(vid) + " with name: " + name)
++        else:
++            json_data["System"]["bridge"]["Bridge1"]["vlans"][str(vid)] = \
++                {"admin": "up", "id": vid, "type": "static", "name": "VLAN" + str(vid)}
++            module.log(msg="Added VLAN " + str(vid) + " with name: " + "VLAN" +
++                           str(vid))
++
++        if description is not None:
++            json_data["System"]["bridge"]["Bridge1"]["vlans"][str(vid)]["description"] = \
++                description
++            module.log(msg="Added description " + description + " to VLAN " + str(vid))
++
++        '''
++        Attaching interface to VLAN
++        '''
++        if interfaces is not None:
++            '''
++            Removing interfaces that already attached to VLAN
++            '''
++            for k, v in json_data["Port"].items():
++                if "vlan_tag" in v.keys():
++                    if (v["vlan_tag"] == str(vid)):
++                        json_data["Port"][k].pop("vlan_mode")
++                        json_data["Port"][k].pop("vlan_tag")
++            '''
++            Adding interfaces to VLAN
++            '''
++            for item in interfaces:
++                item = item.strip()
++                if (len(item.encode('utf-8')) > 8) or (not bool(re.match('^[a-zA-Z0-9/]+$',
++                                                       item))):
++                    module.fail_json(msg='Interface ' + item + ' is not valid.')
++                encode_interface = item.replace('/', '%2F')
++                if encode_interface in json_data["Port"].keys():
++                    json_data["Port"][encode_interface]["vlan_mode"] = "access"
++                    json_data["Port"][encode_interface]["vlan_tag"] = str(vid)
++                    if encode_interface not in json_data["System"]["bridge"]["Bridge1"]["ports"]:
++                        json_data["System"]["bridge"]["Bridge1"]["ports"].append(encode_interface)
++                else:
++                    warnings.append("Interface " + item + " does not exist on switch")
++                '''
++                Disable routing on interface
++                '''
++                if encode_interface in json_data["System"]["vrfs"].setdefault("default", {}).\
++                        setdefault("ports", []):
++                    json_data["System"]["vrfs"]["default"]["ports"].remove(encode_interface)
++            if not json_data["System"]["vrfs"]["default"]["ports"]:
++                json_data["System"]["vrfs"].pop("default")
++
++    '''
++    Checking if change is idempotent
++    '''
++    if get_json != json_data:
++        result["changed"] = True
++        connection.put_running_config(json.dumps(json_data))
++    else:
++        module.log("========No Change=========")
++
++    '''
++    Writing debugging file
++    '''
++    with open('/tmp/debugging_running_config.json', 'w') as to_file:
++        json.dump(json_data, to_file, indent=4)
++        to_file.write("\n")
++    module.exit_json(**result)
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/ansible/modules/network/arubaoscx/arubaoscx_vlan_interface.py b/ansible/modules/network/arubaoscx/arubaoscx_vlan_interface.py
+new file mode 100644
+index 0000000000..a142ff1cbd
+--- /dev/null
++++ b/ansible/modules/network/arubaoscx/arubaoscx_vlan_interface.py
+@@ -0,0 +1,348 @@
++#!/usr/bin/python
++
++ANSIBLE_METADATA = {
++    'metadata_version': '1.0',
++    'status': ['preview'],
++    'supported_by': 'community'
++}
++
++DOCUMENTATION = '''
++---
++module: arubaoscx_vlan_interface
++
++version_added: "1.0"
++
++description:
++    - "This module implements VLAN interface configuration for ArubaOS_CX switch"
++
++options:
++    interface:
++        description: Interface name, should be in form of 'vlan' + vlanid, eg. vlan2.
++        type: string
++        required: true
++    admin_state:
++        description: Admin status information about interface.
++        default: 'up'
++        choices: ['up', 'down']
++        required: False
++    description:
++        description: Description of interface.
++        type: string
++        required: False
++    ipv4:
++        description: The IPv4 address and subnet mask in the address/mask format.
++                     The first entry in the list is the primary IPv4, the remainings are secondary IPv4.
++        type: list
++        required: False
++    ipv6:
++        description: The IPv6 address and subnet mask in the address/mask format.
++                     It takes multiple IPv6 with comma separated in the list.
++        type: list
++        required: False
++    vrf:
++        description: Attaching interface to VRF, commonly known as Virtual Routing and Forwarding.
++                     The interface will be attached to default VRF if not specified.
++        type: string
++        required: False
++    ip_helper_address:
++        description: Configure a remote DHCP server/relay IP address on the device interface. Here the
++                     helper address is same as the DHCP server address or another intermediate DHCP relay.
++        type: list
++        required: False
++    active_gateway_ip:
++        description: For VSX and active-active routing, virtual gateway IPv4 address.
++        type: string
++        required: False
++    active_gateway_mac_v4:
++        description: VSX virtual gateway MAC address for the corresponding virtual gateway IPv4 address.
++        type: string
++        required: False
++    state:
++        description: Create/Update or Delete interface
++        default: 'present'
++        choices: ['present', 'absent']
++        required: False
++
++author:
++    - Aruba Networks
++'''
++
++EXAMPLES = '''
++     - name: Adding VLAN interface
++       arubaoscx_vlan_interface:
++         interface: "{{ item.interface }}"
++         description: "{{ item.description }}"
++       with_items:
++         - { interface: vlan2, description: 'This is interface vlan2' }
++         - { interface: vlan3, description: 'This is interface vlan3' }
++
++     - name: Attaching IP addresses to interface
++       arubaoscx_vlan_interface:
++         interface: "{{ item.interface }}"
++         ipv4: "{{ item.ipv4 }}"
++         ipv6: "{{ item.ipv6 }}"
++       with_items:
++         - { interface: vlan2, ipv4: ['1.2.3.4/24', '1.3.4.5/24'], ipv6: ['2000:db8::1234/32', '2001:db8::1234/32'] }
++         - { interface: vlan3, ipv4: ['1.4.5.6/24', '1.5.6.7/24'], ipv6: ['2002:db8::1234/32', '2003:db8::1234/32'] }
++
++     - name: Attaching IP helper addresses to interface
++       arubaoscx_vlan_interface:
++         interface: "{{ item.interface }}"
++         ip_helper_address: "{{ item.ip_helper_address }}"
++       with_items:
++         - { interface: vlan2, ip_helper_address: ['10.6.7.10'] }
++         - { interface: vlan3, ip_helper_address: ['10.6.7.10', '10.10.10.10'] }
++
++     - name: Attaching active gateway to interface
++       arubaoscx_vlan_interface:
++         interface: "{{ item.interface }}"
++         active_gateway_ip: "{{ item.active_gateway_ip }}"
++         active_gateway_mac_v4: "{{ item.active_gateway_mac_v4 }}"
++       with_items:
++         - { interface: vlan2, active_gateway_ip: '172.1.3.254', active_gateway_mac_v4: '98:F2:68:FF:B3:00' }
++         - { interface: vlan3, active_gateway_ip: '172.1.3.254', active_gateway_mac_v4: '98:F2:68:FF:B3:00' }
++
++     - name: Adding VLAN interface with IP addresses, VRF, IP helper address and active gateway
++       arubaoscx_vlan_interface:
++         interface: "{{ item.interface }}"
++         description: "{{ item.description }}"
++         ipv4: "{{ item.ipv4 }}"
++         ipv6: "{{ item.ipv6 }}"
++         vrf: "{{ item.vrf }}"
++         ip_helper_address: "{{ item.ip_helper_address }}"
++         active_gateway_ip: "{{ item.active_gateway_ip }}"
++         active_gateway_mac_v4: "{{ item.active_gateway_mac_v4 }}"
++       with_items:
++         - { interface: vlan2, description: 'This is interface vlan2', ipv4: ['1.2.3.4/24'], ipv6: ['2001:db8::1234/32'], vrf: myvrf, ip_helper_address: ['10.6.7.10'], active_gateway_ip: '172.1.3.254', active_gateway_mac_v4: '98:F2:68:FF:B3:00' }
++         - { interface: vlan3, description: 'This is interface vlan3', ipv4: ['1.2.4.5/24'], ipv6: ['2001:db7::1234/32'], vrf: myvrf, ip_helper_address: ['10.6.7.10'], active_gateway_ip: '172.1.3.254', active_gateway_mac_v4: '98:F2:68:FF:B3:00' }
++
++     - name: Deleting interface
++       arubaoscx_vlan_interface:
++         interface: "{{ item.interface }}"
++         state: "{{ item.state }}"
++       with_items:
++           - { interface: vlan2, state: absent }
++           - { interface: vlan3, state: absent }
++'''
++
++
++from ansible.module_utils.basic import AnsibleModule
++import json
++import re
++import ipaddress
++import sys
++from ansible.module_utils.connection import Connection
++
++
++'''
++Vefiry if the input IP address is valid.
++'''
++
++
++def valid_ip(ip):
++    try:
++        if sys.version_info[0] == 2:
++            ipaddress.ip_network(ip.strip().decode("utf-8"), strict=True)
++        elif sys.version_info[0] == 3:
++            ipaddress.ip_network(bytes(ip.strip().encode("utf-8")), strict=True)
++        return True
++    except Exception:
++        return False
++
++
++def main():
++    module_args = dict(
++       interface=dict(type='str', required=True),
++       admin_state=dict(default='up', choices=['up', 'down']),
++       description=dict(type='str', default=None),
++       ipv4=dict(type='list', default=None),
++       ipv6=dict(type='list', default=None),
++       vrf=dict(type='str', default=None),
++       ip_helper_address=dict(type='list', default=None),
++       active_gateway_ip=dict(type='str', default=None),
++       active_gateway_mac_v4=dict(type='str', default=None),
++       state=dict(default='present', choices=['present', 'absent'])
++    )
++    warnings = list()
++    result = dict(changed=False, warnings=warnings)
++    module = AnsibleModule(
++        argument_spec=module_args,
++        supports_check_mode=True
++    )
++
++    if module.check_mode:
++        module.exit_json(changed=False)
++
++    connection = Connection(module._socket_path)
++    get_response = connection.get_running_config()
++    module.log(msg=get_response)
++    interface = module.params['interface'].lower()
++    admin_state = module.params['admin_state']
++    description = module.params['description']
++    ipv4 = module.params['ipv4']
++    ipv6 = module.params['ipv6']
++    vrf = module.params['vrf']
++    ip_helper_address = module.params['ip_helper_address']
++    active_gateway_ip = module.params['active_gateway_ip']
++    active_gateway_mac_v4 = module.params['active_gateway_mac_v4']
++    state = module.params['state']
++
++    try:
++        json_data = json.loads(get_response)
++    except ValueError:
++        module.fail_json(msg=get_response)
++
++    '''
++    Verify if input interface string is valid
++    '''
++    if (len(interface.encode('utf-8')) > 8) or (not bool(re.match('^[a-zA-Z0-9/]+$', interface))):
++        module.fail_json(msg='Interface is not valid.')
++
++    '''
++    Deleting interface
++    '''
++    if state == 'absent':
++        get_json = json.loads(get_response)
++        encode_interface = interface.replace('/', '%2F')
++        if encode_interface in json_data["Port"].keys():
++            json_data["Port"].pop(encode_interface)
++        else:
++            warnings.append("Interface " + interface + " has already been removed.")
++        if encode_interface in json_data["System"]["bridge"]["Bridge1"]["ports"]:
++            json_data["System"]["bridge"]["Bridge1"]["ports"].remove(encode_interface)
++        if "Interface" in json_data.keys():
++            if encode_interface in json_data["Interface"].keys():
++                json_data["Interface"].pop(encode_interface)
++        for item in json_data["System"]["vrfs"].keys():
++            if encode_interface in json_data["System"]["vrfs"][item].get("ports", []):
++                json_data["System"]["vrfs"][item].get("ports", []).remove(encode_interface)
++
++    '''
++    Adding interface
++    '''
++    if state == 'present':
++        get_json = json.loads(get_response)
++        if interface is not None:
++            vid = interface.replace('vlan', '')
++            if "vlans" not in json_data["System"]["bridge"]["Bridge1"].keys():
++                module.fail_json(msg='VLAN ' + str(vid) + ' should be created before creating interface ' + interface)
++            if vid not in json_data["System"]["bridge"]["Bridge1"]["vlans"].keys():
++                module.fail_json(msg='VLAN ' + str(vid) + ' should be created before creating interface ' + interface)
++            json_data["Port"].setdefault(interface, {})["name"] = interface
++            json_data["Port"][interface]["vlan_tag"] = interface.replace('vlan', '')
++            if interface not in json_data["Port"][interface].setdefault("interfaces", []):
++                json_data["Port"][interface]["interfaces"].append(interface)
++            if "default" in json_data["System"]["vrfs"].keys():
++                if interface not in json_data["System"]["vrfs"]["default"]["ports"]:
++                    json_data["System"]["vrfs"]["default"].setdefault("ports", []).append(interface)
++            else:
++                json_data["System"]["vrfs"]["default"] = {"name": "default", "ports": [interface]}
++            if interface not in json_data["System"]["bridge"]["Bridge1"]["ports"]:
++                json_data["System"]["bridge"]["Bridge1"]["ports"].append(interface)
++            module.log(msg='Added Interface: ' + interface)
++
++        if admin_state == "up":
++            json_data["Port"][interface]["admin"] = "up"
++            json_data.setdefault("Interface", {})[interface] = {"name": interface, "type": "internal", "user_config": {"admin": "up"}}
++        elif admin_state == "down":
++            json_data["Port"][interface]["admin"] = "down"
++            json_data.setdefault("Interface", {})[interface] = {"name": interface, "type": "internal", "user_config": {"admin": "down"}}
++
++        if description is not None:
++            json_data["Port"][interface]["description"] = description
++            module.log(msg="Added interface with name='" + interface + "' description='" + description + "'")
++
++        '''
++        Attaching IPv4 address to interface
++        '''
++        if ipv4 is not None:
++            json_data["Port"][interface]["ip4_address"] = ipv4[0]
++            if len(ipv4) > 2:
++                json_data["Port"][interface]["ip4_address_secondary"] = []
++                for item in ipv4[1:]:
++                    json_data["Port"][interface]["ip4_address_secondary"].append(item)
++            elif len(ipv4) == 2:
++                json_data["Port"][interface]["ip4_address_secondary"] = ipv4[1]
++            module.log(msg='Attached IPv4 address ' + ''.join(ipv4) + ' to interface ' + interface)
++
++        '''
++        Attaching IPv6 address to interface
++        '''
++        if ipv6 is not None:
++            if "ip6_addresses" in json_data["Port"][interface].keys():
++                json_data["Port"][interface]["ip6_addresses"] = {}
++            for item in ipv6:
++                json_data["Port"][interface].setdefault("ip6_addresses", {})[item] =\
++                    {"node_address": True, "preferred_lifetime": 604800, "ra_prefix": True, "type": "global-unicast", "valid_lifetime": 2592000}
++            module.log(msg='Attached IPv6 address ' + ' '.join(ipv6) + ' to interface ' + interface)
++
++        '''
++        Attaching interface to non-default VRF
++        '''
++        if vrf is not None:
++            if vrf not in json_data["System"]["vrfs"].keys():
++                warnings.append('VRF ' + vrf + ' does not exist on switch.')
++            elif interface not in json_data["System"]["vrfs"][vrf].get("ports", []):
++                json_data["System"]["vrfs"][vrf].setdefault("ports", []).append(interface)
++                if vrf != 'default' and (interface in json_data["System"]["vrfs"].get("default", {}).get("ports", [])):
++                    json_data["System"]["vrfs"]["default"]["ports"].remove(interface)
++                    if not json_data["System"]["vrfs"]["default"]["ports"]:
++                        json_data["System"]["vrfs"].pop("default")
++                module.log(msg='Attached interface ' + interface + ' to VRF ' + vrf)
++            elif interface in json_data["System"]["vrfs"][vrf].get("ports", []):
++                if vrf != 'default' and (interface in json_data["System"]["vrfs"].get("default", {}).get("ports", [])):
++                    json_data["System"]["vrfs"]["default"]["ports"].remove(interface)
++                    if not json_data["System"]["vrfs"]["default"]["ports"]:
++                        json_data["System"]["vrfs"].pop("default")
++
++        '''
++        Attaching helper-address to interface
++        '''
++        if ip_helper_address is not None:
++            if (vrf is not None) and (vrf in json_data["System"]["vrfs"].keys()):
++                vrf_dhcp = vrf
++            else:
++                vrf_dhcp = "default"
++            dhcp_name = vrf_dhcp + "/" + interface
++            if len(ip_helper_address) <= 1:
++                json_data.setdefault("DHCP_Relay", {})[dhcp_name] = {"ipv4_ucast_server": ip_helper_address[0], "port": interface, "vrf": vrf_dhcp}
++            else:
++                json_data.setdefault("DHCP_Relay", {})[dhcp_name] = {"ipv4_ucast_server": [], "port": interface, "vrf": vrf_dhcp}
++                for item in ip_helper_address:
++                    json_data["DHCP_Relay"][dhcp_name]["ipv4_ucast_server"].append(item)
++                    json_data["DHCP_Relay"][dhcp_name]["ipv4_ucast_server"].sort()
++
++        '''
++        Attaching active gateway to interface
++        '''
++        if (active_gateway_ip is None) and (active_gateway_mac_v4 is not None):
++            warnings.append("Both active_gateway_ip and active_gateway_mac_v4 are required for configure active gateway.")
++        if (active_gateway_ip is not None) and (active_gateway_mac_v4 is not None):
++            json_data["Port"][interface]["vsx_virtual_ip4"] = active_gateway_ip
++            json_data["Port"][interface]["vsx_virtual_gw_mac_v4"] = active_gateway_mac_v4
++
++    '''
++    Updating running config on remote switch
++    '''
++    connection.put_running_config(json.dumps(json_data))
++
++    '''
++    Writing Debugging File
++    '''
++    with open('/tmp/debugging_running_config.json', 'w') as to_file:
++        json.dump(json_data, to_file, indent=4)
++        to_file.write("\n")
++
++    '''
++    Checking if change is idempotent
++    '''
++    if get_json != json_data:
++        result["changed"] = True
++    else:
++        module.log(msg="========Nothing Changed=========")
++
++    module.exit_json(**result)
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/ansible/plugins/connection/arubaoscx_rest.py b/ansible/plugins/connection/arubaoscx_rest.py
+new file mode 100644
+index 0000000000..41d3bdcd8f
+--- /dev/null
++++ b/ansible/plugins/connection/arubaoscx_rest.py
+@@ -0,0 +1,289 @@
++# (c) 2018 Red Hat Inc.
++# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
++
++from __future__ import (absolute_import, division, print_function)
++__metaclass__ = type
++
++DOCUMENTATION = """
++---
++author: Ansible Networking Team
++connection: httpapi
++short_description: Use httpapi to run command on network appliances
++description:
++  - This connection plugin provides a connection to remote devices over a
++    HTTP(S)-based api.
++version_added: "2.6"
++options:
++  host:
++    description:
++      - Specifies the remote device FQDN or IP address to establish the HTTP(S)
++        connection to.
++    default: inventory_hostname
++    vars:
++      - name: ansible_host
++  port:
++    type: int
++    description:
++      - Specifies the port on the remote device to listening for connections
++        when establishing the HTTP(S) connection.
++        When unspecified, will pick 80 or 443 based on the value of use_ssl
++    ini:
++      - section: defaults
++        key: remote_port
++    env:
++      - name: ANSIBLE_REMOTE_PORT
++    vars:
++      - name: ansible_port
++      - name: ansible_httpapi_port
++  network_os:
++    description:
++      - Configures the device platform network operating system.  This value is
++        used to load the correct httpapi and cliconf plugins to communicate
++        with the remote device
++    vars:
++      - name: ansible_network_os
++  remote_user:
++    description:
++      - The username used to authenticate to the remote device when the API
++        connection is first established.  If the remote_user is not specified,
++        the connection will use the username of the logged in user.
++      - Can be configured form the CLI via the C(--user) or C(-u) options
++    ini:
++      - section: defaults
++        key: remote_user
++    env:
++      - name: ANSIBLE_REMOTE_USER
++    vars:
++      - name: ansible_user
++  password:
++    description:
++      - Secret used to authenticate
++    vars:
++      - name: ansible_password
++      - name: ansible_httpapi_pass
++  use_ssl:
++    description:
++      - Whether to connect using SSL (HTTPS) or not (HTTP)
++    default: False
++    vars:
++      - name: ansible_httpapi_use_ssl
++  timeout:
++    type: int
++    description:
++      - Sets the connection time, in seconds, for the communicating with the
++        remote device.  This timeout is used as the default timeout value for
++        commands when issuing a command to the network CLI.  If the command
++        does not return in timeout seconds, the an error is generated.
++    default: 120
++  become:
++    type: boolean
++    description:
++      - The become option will instruct the CLI session to attempt privilege
++        escalation on platforms that support it.  Normally this means
++        transitioning from user mode to C(enable) mode in the CLI session.
++        If become is set to True and the remote device does not support
++        privilege escalation or the privilege has already been elevated, then
++        this option is silently ignored
++      - Can be configured form the CLI via the C(--become) or C(-b) options
++    default: False
++    ini:
++      section: privilege_escalation
++      key: become
++    env:
++      - name: ANSIBLE_BECOME
++    vars:
++      - name: ansible_become
++  become_method:
++    description:
++      - This option allows the become method to be specified in for handling
++        privilege escalation.  Typically the become_method value is set to
++        C(enable) but could be defined as other values.
++    default: sudo
++    ini:
++      section: privilege_escalation
++      key: become_method
++    env:
++      - name: ANSIBLE_BECOME_METHOD
++    vars:
++      - name: ansible_become_method
++  persistent_connect_timeout:
++    type: int
++    description:
++      - Configures, in seconds, the amount of time to wait when trying to
++        initially establish a persistent connection.  If this value expires
++        before the connection to the remote device is completed, the connection
++        will fail
++    default: 30
++    ini:
++      - section: persistent_connection
++        key: connect_timeout
++    env:
++      - name: ANSIBLE_PERSISTENT_CONNECT_TIMEOUT
++  persistent_command_timeout:
++    type: int
++    description:
++      - Configures, in seconds, the amount of time to wait for a command to
++        return from the remote device.  If this timer is exceeded before the
++        command returns, the connection plugin will raise an exception and
++        close
++    default: 10
++    ini:
++      - section: persistent_connection
++        key: command_timeout
++    env:
++      - name: ANSIBLE_PERSISTENT_COMMAND_TIMEOUT
++"""
++
++import os
++import requests
++from ansible import constants as c
++from ansible.module_utils._text import to_bytes
++from ansible.module_utils.six import PY3
++from ansible.module_utils.six.moves import cPickle
++from ansible.playbook.play_context import PlayContext
++from ansible.plugins.loader import connection_loader
++from ansible.plugins.connection import ConnectionBase
++from ansible.utils.path import unfrackpath
++
++try:
++    from __main__ import display
++except ImportError:
++    from ansible.utils.display import Display
++    display = Display()
++
++
++class Connection(ConnectionBase):
++    '''Network API connection'''
++
++    transport = 'httpapi'
++    has_pipelining = True
++    force_persistence = True
++    # Do not use _remote_is_local in other connections
++    _remote_is_local = True
++
++    def __init__(self, play_context, new_stdin, *args, **kwargs):
++        super(Connection, self).__init__(play_context, new_stdin, *args, **kwargs)
++
++        self._is_http = True
++        self._history = list()
++
++        self._local = connection_loader.get('local', self._play_context, '/dev/null')
++        self._local.set_options()
++
++        self._ansible_playbook_pid = kwargs.get('ansible_playbook_pid')
++
++        # For making connection to the switch
++        self._password = self._play_context.password
++        self._username = self._play_context.remote_user
++        self._remote_host = self._play_context.remote_addr
++        self._protocol = 'https'
++
++        # Construct URLs for interacting with the switch
++        self._construct_urls()
++
++        # reconstruct the socket_path and set instance values accordingly
++        self._update_connection_state()
++
++    def __getattr__(self, name):
++        try:
++            return self.__dict__[name]
++        except KeyError:
++            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
++
++    def _construct_urls(self):
++        login_string = '/rest/v1/login'
++        logout_string = '/rest/v1/logout'
++        run_config_string = '/rest/v1/fullconfigs/running-config'
++        self._login_url = '%s://%s%s' % (self._protocol, self._remote_host, login_string)
++        self._logout_url = '%s://%s%s' % (self._protocol, self._remote_host, logout_string)
++        self._run_config_url = '%s://%s%s' % (self._protocol, self._remote_host, run_config_string)
++
++    def exec_command(self, cmd, in_data=None, sudoable=True):
++        return self._local.exec_command(cmd, in_data, sudoable)
++
++    def put_file(self, in_path, out_path):
++        return self._local.put_file(in_path, out_path)
++
++    def fetch_file(self, in_path, out_path):
++        return self._local.fetch_file(in_path, out_path)
++
++    def update_play_context(self, pc_data):
++        """Updates the play context information for the connection"""
++        pc_data = to_bytes(pc_data)
++        if PY3:
++            pc_data = cPickle.loads(pc_data, encoding='bytes')
++        else:
++            pc_data = cPickle.loads(pc_data)
++        play_context = PlayContext()
++        play_context.deserialize(pc_data)
++
++        messages = ['updating play_context for connection']
++        if self._play_context.become ^ play_context.become:
++            self._httpapi.set_become(play_context)
++
++        self._play_context = play_context
++        return messages
++
++    def _connect(self):
++        if self._connected:
++            return
++        display.vvvv("Opening the rest session now")
++        payload = {'action': 'login', 'username': self._username, 'password': self._password}
++        self._http_session_handle = requests.session()
++        self._http_session_handle.trust_env = False
++        response = self._http_session_handle.post(self._login_url, data=payload, verify=False)
++        display.vvvv("Login response")
++        display.vvvv(response.text)
++        display.vvvv("The session object is")
++        display.vvvv("=== ======= ====== ==")
++        display.vvvv(str(self._http_session_handle))
++        self._connected = True
++
++    def _update_connection_state(self):
++        '''
++        Reconstruct the connection socket_path and check if it exists
++        If the socket path exists then the connection is active and set
++        both the _socket_path value to the path and the _connected value
++        to True.  If the socket path doesn't exist, leave the socket path
++        value to None and the _connected value to False
++        '''
++        ssh = connection_loader.get('ssh', class_only=True)
++        cp = ssh._create_control_path(
++            self._play_context.remote_addr, self._play_context.port,
++            self._play_context.remote_user, self._play_context.connection,
++            self._ansible_playbook_pid
++        )
++
++        tmp_path = unfrackpath(c.PERSISTENT_CONTROL_PATH_DIR)
++        socket_path = unfrackpath(cp % dict(directory=tmp_path))
++
++        if os.path.exists(socket_path):
++            self._connected = True
++            self._socket_path = socket_path
++
++    def reset(self):
++        '''
++        Reset the connection
++        '''
++        if self._socket_path:
++            display.vvvv('resetting persistent connection for socket_path %s' % self._socket_path, host=self.host)
++            self.close()
++        display.vvvv('reset call on connection instance', host=self.host)
++
++    def close(self):
++        if self._connected:
++            response = self._http_session_handle.post(self._logout_url, verify=False)
++            display.debug("Hi! Closing the http connection now")
++            display.vvvv(response.text)
++            display.display("Closed the http connection!")
++            self._connected = False
++
++    def get_running_config(self):
++        if self._connected and self._http_session_handle:
++            response = self._http_session_handle.get(self._run_config_url, verify=False)
++            return response.text
++
++    def put_running_config(self, updated_config):
++        if self._connected and self._http_session_handle:
++            response = self._http_session_handle.put(self._run_config_url, data=updated_config, verify=False)
++            return response.text

@@ -1,0 +1,17 @@
+# Login to ArubaOS Switch
+- name: Login to ArubaOS Switch
+  uri:
+    url: "https://{{ ip }}/rest/v4/login-sessions"
+    method: POST
+    headers:
+      Accept: "application/json"
+      Content-Type: "application/json"
+    body: {"userName": "{{ user }}", "password": "{{ password }}"}
+    body_format: json
+    validate_certs: no
+    status_code: 201
+  register: switch_session
+
+# Example
+#    - name: Login
+#      include: aruba_task_lists/aos_switch/login_switch.yml
