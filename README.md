@@ -20,9 +20,9 @@ This project currently holds the following Workflow Documentation. Please click 
 
 
 ##### General Workflows
-* [Create custom Workflow with existing task](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/Create-custom-Workflow-with-existing-task)
-* [ArubaOS-Switch Modules Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-Switch-Modules-Examples)
-* [ArubaOS-CX Modules Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-CX-Modules-Examples)
+* [Create custom Workflow with existing task](https://github.com/aruba/aruba_switch_ansible/wiki/Create-custom-Workflow-with-existing-task)
+* [ArubaOS-Switch Modules Example](https://github.com/aruba/aruba_switch_ansible/wiki/ArubaOS-Switch-Modules-Examples)
+* [ArubaOS-CX Modules Example](https://github.com/aruba/aruba_switch_ansible/wiki/ArubaOS-CX-Modules-Examples)
 
 
 ##### Specific Workflows
