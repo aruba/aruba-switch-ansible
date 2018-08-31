@@ -32,7 +32,7 @@ This project currently holds the following Workflow Documentation. Please click 
 * [ArubaOS-Switch and ArubaOS-CX Config Generation](https://github.com/aruba/aruba_switch_ansible/wiki/ArubaOS-Switch-and-ArubaOS-CX-Config-Generation)
 
 ##### Ansible Tower Integration
-* [Ansible Tower Branch](https://github.com/aruba/aruba_switch_ansible/wiki/Ansible-Tower-Integration)
+* [Ansible Tower Branch](https://github.com/aruba/aruba_switch_ansible/tree/ansible-tower-support)
 
 
 ## Project Structure
