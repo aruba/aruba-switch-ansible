@@ -3,7 +3,7 @@ This is the project created for usage in Ansible Tower 2.5 or 2.6.
 Integration documentation is below. 
 
 ## Ansible Tower Integration
-* [Ansible Tower Integration Documentation]()
+* [Ansible Tower Integration Documentation](https://github.com/aruba/aruba_switch_ansible/wiki/Ansible-Tower-Integration)
 
 ## Project Structure
 ```bash
