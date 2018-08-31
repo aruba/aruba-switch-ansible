@@ -121,15 +121,40 @@ class CliUser:
         """
         Additional needed Setup for Connection
         """
-        # Additional Sleep
-        time.sleep(1)
         # Set prompt
+        count = 0
+        fail = True
         self.in_channel("")
-        text = self.out_channel()
-        text = (text.strip(' ')).strip('\r').strip('\n')
-        if '#' not in text:
-            self.module.fail_json(msg='Wrong Mode Entered. Did not enter in "#" mode. Aborting')
-        self.prompt = text
+        while count < 45:
+            time.sleep(2)
+            curr_text = self.out_channel()
+            if '#' in curr_text:
+                fail = False
+                break
+            count += 1
+        if fail:
+            self.module.fail_json(msg='Unable to read CLI Output in given Time')
+
+        # Set prompt
+        count = 0
+        self.in_channel("")
+        # Regex for ANSI escape chars and prompt
+        text = ''
+        fail = True
+        while count < 45:
+            time.sleep(2)
+            curr_text = self.out_channel()
+            text += curr_text.replace('\r', '')
+            if '#' in curr_text:
+                fail = False
+                break
+            count += 1
+
+        if fail:
+            self.module.fail_json(msg='Unable to read CLI Output in given Time for prompt')
+
+        self.prompt = text.strip('\n').replace(' ', '')
+
 
     def out_channel(self):
         """
@@ -196,10 +221,8 @@ def run_module():
 
     class_init = CliUser(module)
     try:
-        print("test")
         result['cli_output'] = class_init.execute_command(module.params['commands'])
         result['changed'] = True
-        print("test2")
     finally:
         class_init.logout()
 
