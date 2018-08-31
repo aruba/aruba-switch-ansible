@@ -6,7 +6,7 @@
     return_content: yes
     headers:
       Content-Type: "application/x-www-form-urlencoded"
-    body: "username={{ user }}&password={{ password }}"
+    body: "username={{ user_cx }}&password={{ password_cx }}"
     validate_certs: no
     status_code: 200
   register: cx_session

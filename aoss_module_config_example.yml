@@ -25,19 +25,8 @@
 # Repleace STATUS with "configure" to configure the switch and "unconfigure" to undo configuration done by the configuration part
 #
 ---
-- hosts: localhost
-  connection: local
-  tasks:
-    # Store Global variables. These are also used by other plays in this playbook
-    - name: Store Global variables in localhost
-      block:
-        - set_fact:
-            site_data: "{{ hostvars[groups[site][0]] }}"
-        - set_fact:
-            sw_group_name: "{{ site_data.sw_group_name }}"  # Group for the Switches
-
 # This block will execute a set of different configurations via tasks
-- hosts: "{{ hostvars.localhost.sw_group_name }}"
+- hosts: branch*_switches
   connection: local
   gather_facts: False
   # This will set the needed overall variables for the modules to use the connection plugin.

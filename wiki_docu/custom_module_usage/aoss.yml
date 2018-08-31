@@ -1,4 +1,4 @@
-- hosts: switch1
+- hosts: switch1_switch
   gather_facts: False
   tasks:
     - name: Updates Hostname

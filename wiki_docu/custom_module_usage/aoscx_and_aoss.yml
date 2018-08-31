@@ -1,0 +1,19 @@
+- hosts: switch1_cx
+  gather_facts: False
+  tasks:
+    - name: Adding new interface
+      arubaoscx_l3_interface:
+        interface: '1/1/3'
+        description: 'New l3 interface'
+
+
+- hosts: switch1_switch
+  gather_facts: False
+  vars:
+    ansible_user: "{{ user }}"
+    ansible_password: "{{ password }}"
+  tasks:
+    - name: Updates Hostname
+      arubaoss_system_attributes:
+        hostname: "automation_2930M_1"
+

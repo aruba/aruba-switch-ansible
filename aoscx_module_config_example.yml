@@ -25,23 +25,13 @@
 # Repleace STATUS with "configure" to configure the switch and "unconfigure" to undo configuration done by the configuration part
 #
 ---
-- hosts: localhost
-  connection: local
-  tasks:
-    - name: Store Global variables in localhost
-      block:
-        - set_fact:
-            site_data: "{{ hostvars[groups[site][0]] }}"
-        - set_fact:
-            cx_group_name: "{{ site_data.cx_group_name }}"  # Group for the CX
-
-- hosts: "{{ hostvars.localhost.cx_group_name }}"
+- hosts: branch*_cxs
   gather_facts: no
   # This will set the needed overall variables for the modules to use the connection plugin.
   # Normally these could be stored in the inventory but we are "migrating" them to keep a similar inventory structure for all workflows.
   vars:
-    ansible_user: "{{ user }}"
-    ansible_password: "{{ password }}"
+    ansible_user: "{{ user_cx }}"
+    ansible_password: "{{ password_cx }}"
     ansible_host: "{{ ip }}"
   connection: arubaoscx_rest
   tasks:

@@ -34,11 +34,20 @@ def json_type_converter(current_dict, typelist):
 
     return current_dict
 
+def to_int(input_string):
+    """
+    Turn string into int
+    :param input_string
+    :return: int of String
+    """
+    return int(input_string)
 
 class FilterModule(object):
 
     def filters(self):
         return {
             # Put Body creation
-            'json_type_converter': json_type_converter
+            'json_type_converter': json_type_converter,
+            'to_int': to_int
+
         }

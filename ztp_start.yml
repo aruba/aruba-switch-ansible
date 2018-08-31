@@ -36,7 +36,7 @@
         # Include configure task which does ZTP calls for you
         include: aruba_task_lists/ztp/configure.yml
         # Loops through a List of dict which we got from a lookup plugin. Each Dict will have all needed information to do ZTP
-        with_items: "{{ lookup('ztp_vars', switch_list , hostvars[hostvars[groups[site][0]]['peer2']]['ip'], hostvars[hostvars[groups[site][0]]['peer2']]['user'], hostvars[hostvars[groups[site][0]]['peer2']]['password'], site, wantlist=True ) }}"
+        with_items: "{{ lookup('ztp_vars', switch_list , hostvars[hostvars[groups[site][0]]['peer2']]['ip'], user_cx, password_cx, site, wantlist=True ) }}"
 
 
 
