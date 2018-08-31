@@ -1,4 +1,4 @@
-# Change interface description
+# Change interface state
 - name: Get current interface object
   uri:
     url: 'https://{{ ip }}{{ interface }}'
@@ -14,7 +14,7 @@
   set_fact:
     put_body: "{{ get_int_response.json | make_interface_body( ip , [['user_config', ['sub_dict', 'admin', state]]]) }}"
 
-- name: Change interface description
+- name: Change interface state
   uri:
     url: 'https://{{ ip }}{{ interface }}'
     method: PUT
@@ -28,7 +28,7 @@
 
 
 #     Example
-#    - name: Change interface description
+#    - name: Change interface state
 #      include: aruba_task_lists/aos_cx/change_if_description.yml
 #      vars:
 #        state: "up"  # Or Down
