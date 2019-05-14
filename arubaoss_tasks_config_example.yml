@@ -35,7 +35,7 @@
   connection: local
   gather_facts: no
   tasks:
-    - name: Confgiure Switch
+    - name: Configure Switch
       block:
         # Login to ArubaOS switches
         - name: Login
@@ -47,6 +47,19 @@
           with_items:
             - "configure terminal"
             - "vlan 233"
+
+        # Variable uri_result contains the response from anycli task
+        - name: Use AnyCli - show vlans
+          include: aruba_task_lists/aos_switch/anycli.yml command="show vlans"
+
+        # Decode output from anycli task
+        - set_fact:
+            rest_cli_output: "{{uri_result.json.result_base64_encoded| b64decode}}"
+
+        # Check if newly created vlan 233 is in cli_output
+        - debug:
+            msg: "Vlan 233 was created"
+          when:  rest_cli_output.find("233")
 
         # Configure ArubaOS Switches to upload new cert
         - name: Upload TA cert
