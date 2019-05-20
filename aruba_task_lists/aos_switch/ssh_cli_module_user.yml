@@ -30,20 +30,20 @@
     password: "{{ password }}"
     # This will execute each command through the CLI and return the CLI Output
     show_command: ["show flash", "show version"]
-  # Saves the results from the module call into variable result_cli_output
+  # The result will have the CLI Output
   register: result_cli_output
 
-# The result will have a key called "cli_output" which is a list of results from the executed command
-# This list will the output for each command that got executed (command in show_command list)
-# You can acces it through the index which starts at zero
+# The result will have a JSON-key called "cli_output" which is an array
+# This array will have an string entry for each command that got executed (command in show_command array)
+# You can acces it via the index which start with zero
 
 # This will print out the result of the show flash output
 - debug:
-    msg: "'show flash' Output: {{ result_cli_output.cli_output[0] }}"
+    msg: "'show flash' Output: {{ check_output.cli_output[0] }}"
 
 # This will print out the result of the show version output
 - debug:
-    msg: "'show version' Output: {{ result_cli_output.cli_output[1] }}"
+    msg: "'show version' Output: {{ check_output.cli_output[1] }}"
 
 
 
@@ -55,8 +55,8 @@
 #    username: "" # String of the username for SSH connection. Required
 #    password: "" # String of the password for the SSH connection. Required (Will not be logged by Ansible)
 #    # You can enter one or both of the following attributes. The Module will execute either and change the result body accordingly
-#    command_list: ["command1", "command2"] # List of strings of commands, will return not CLI output and is faster then show command
-#    show_command: ["command1", "command2"] # List of strings of commands, will return CLI Output to result body. Can also have non show command or mode switches
+#    command_list: ["command1", "command2"] # Array of strings of commands, will return not CLI output and is faster then show command
+#    show_command: ["command1", "command2"] # Array of strings of commands, will return CLI Output to result body. Can also have non show command or mode switches
 #    # If command_list or show_command are not specified, the module will just login and logout via ssh.
 #
 #    # Following are optional parameters which let you change the SSH connection setup

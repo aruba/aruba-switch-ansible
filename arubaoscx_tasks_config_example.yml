@@ -1,0 +1,62 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2017 Hewlett Packard Enterprise Development LP
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+
+# Example on how to use Ansible Task Lists to configure ArubaOS-CX
+---
+- hosts: localhost
+  connection: local
+
+  tasks:
+    # Store Global variables. These are also used by other plays in this playbook
+    - name: Store Global variables in localhost
+      block:
+        - set_fact:
+            site_data: "{{ hostvars[groups[site][0]] }}"
+        - set_fact:
+            cx_group_name: "{{ site_data.cx_group_name }}"  # Group for CX devices
+
+# This block will execute a set of different configurations via tasks
+- hosts: "{{ hostvars.localhost.cx_group_name }}"
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Configure CX
+      block:
+        # Login to ArubaOS CX
+        - name: Login
+          include: aruba_task_lists/aos_cx/login_cx.yml
+
+        # Change interface 1/1/12 description
+        - name: Change interface description
+          include: aruba_task_lists/aos_cx/change_if_description.yml
+          vars:
+            description: UPLINK_PORT
+            interface: "/rest/v1/system/interfaces/1%2F1%2F12" # URI for interface 12
+
+        # Enable interface 1/1/12
+        - name: Change interface state
+          include: aruba_task_lists/aos_cx/change_if_description.yml
+          vars:
+            state: up
+            interface: "/rest/v1/system/interfaces/1%2F1%2F12" # URI for interface 12
+
+      always:
+        # Logout from ArubaOS CX
+        - name: Logout
+          include: aruba_task_lists/aos_cx/logout_cx.yml
+

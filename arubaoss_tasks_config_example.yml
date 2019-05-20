@@ -16,7 +16,7 @@
 # under the License.
 
 
-# Example on how to use Ansible to configure AOS-Switches
+# Example on how to use Ansible Aruba Task Lists to configure ArubaOS-Switches
 ---
 - hosts: localhost
   connection: local
@@ -60,13 +60,6 @@
         - debug:
             msg: "Vlan 233 was created"
           when:  rest_cli_output.find("233")
-
-        # Configure ArubaOS Switches to upload new cert
-        - name: Upload TA cert
-          include: aruba_task_lists/aos_switch/cert_upload.yml
-          vars:
-            path_to_cert: "files/ta_cert.cer"
-            ta_name: "TAcert"
 
         # Configure ArubaOS switches for DNS
         - name: Set dns

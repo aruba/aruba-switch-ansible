@@ -16,12 +16,11 @@
 # under the License.
 
 
-# Example on how to use ArubaOS-Switch Ansible Modules to configure AOS-CX in this Project setup
+# Example on how to use Aruba Switching Ansible Modules to configure AOS-CX in this Project setup
 #
 # Use via:
-# ansible-playbook aoscx_module_config_example.yml -e site=branchX -e state=STATUS
+# ansible-playbook aoscx_module_config_example.yml -e site=branch1 -e state=STATUS
 #
-# Replace X with branch number you want to configure
 # Repleace STATUS with "configure" to configure the switch and "unconfigure" to undo configuration done by the configuration part
 #
 ---
@@ -59,7 +58,7 @@
             description: 'This is a new VLAN'
       when: state == "configure"
 
-    # Unconfigure Switch with modules
+    # Unconfigure CX with modules
     - block:
         - name: Deleting interface
           arubaoscx_l3_interface:

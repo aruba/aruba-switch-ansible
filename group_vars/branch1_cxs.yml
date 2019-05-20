@@ -1,7 +1,7 @@
 # General Vars
-group: "branchX"      # Replace X with Branch Number
-user: "username"      # Username for AOS-CX Switches in Branch X
-password: "password"  # Password for AOS-CX Switches in Branch X
+group: "branch1"
+user: "username"      # Username for AOS-CX Switches
+password: "password"  # Password for AOS-CX Switches
 
 # Config Generator Vars - Example Values
 isl_link1: "1/1/47"
