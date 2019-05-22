@@ -1,65 +1,69 @@
 # Ansible Aruba Switching Automation Workflow GitHub 
-Welcome to the Aruba Switching GitHub for automation with Ansible workflows.
-This repository provides different examples on how to use Ansible for automation of ArubaOS-Switch and ArubaOS-CX Switches. 
+Welcome to the Aruba Switching Automation Workflow GitHub for automation with Ansible!
+This repository uses [Ansible tasks lists](https://github.com/aruba/aruba-switch-ansible/tree/master/aruba_task_lists), [SSH modules](https://github.com/aruba/aruba-switch-ansible/tree/master/library), and the [Aruba Switching Ansible Modules](https://github.com/aruba/aruba-ansible-modules)
+ to configure ArubaOS-Switch and ArubsOS-CX devices.
 
-## Preparation for automation server
-This project can be used on any Linux based system but we highly recommend CentOS in case of an automation server. 
+## Prerequisites
+This project has been tested on Ubuntu 18.04 and CentOS 7 Linux OS but it can be used on any Linux based system.
 
 ### Installations
-* The project requires to have **Python2.7** and at least **Ansible 2.5** installed on your System. See [Ansible Documentation](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) for more information on Ansible installation.
-* This project requires following Python Libraries to be installed. See  [Python 2 Package Installation Documentation](https://docs.python.org/2/installing/index.html) for more information on Python package installation. 
+* The project requires to have **Python2.7** or **Python3.5** and at least **Ansible 2.5** installed on your System. See [Ansible Documentation](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) for more information on Ansible installation.
+* This project requires following Python Libraries to be installed. 
     * **Names: "requests", "urllib3", "paramiko"**
-    * Example: python -m pip install requests (Proxy Setup needed if Proxy exists, Python pip needed)
+* This project requires [Aruba Switching Ansible Modules](https://github.com/aruba/aruba-ansible-modules) to be installed
 
-### Module Integration
-* [Modules Integration and Documentation](https://github.com/aruba/aruba_switch_ansible/wiki/Module-Integration)
+### Module Installation
+* [Modules Installer and Documentation](https://github.com/aruba/aruba-ansible-modules)
 
     
 ## Workflows
 This project currently holds the following Workflow Documentation. Please click on each link to see further information about the Workflow.
 
+#### Inventory Set Up
+See the documented steps on how to set up your inventory to use the workflows in this project here: [Project Inventory Set Up](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/Project-Inventory-Set-Up)
+    
+## Workflows
+This project currently holds the following Workflow Documentation. Please click on each link to see further information about the Workflow.
 
-##### General Workflows
-* [Create custom Workflow with existing task](https://github.com/aruba/aruba_switch_ansible/wiki/Create-custom-Workflow-with-existing-task)
-* [ArubaOS-Switch Modules Example](https://github.com/aruba/aruba_switch_ansible/wiki/ArubaOS-Switch-Modules-Examples)
-* [ArubaOS-CX Modules Example](https://github.com/aruba/aruba_switch_ansible/wiki/ArubaOS-CX-Modules-Examples)
+* [ArubaOS-CX Module Configuration Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-CX-Module-Configuration-Example)
+* [ArubaOS-CX Task Configuration Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-CX-Task-Configuration-Example) 
+* [ArubaOS-Switch and ArubaOS-CX Config Generation](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-Switch-and-ArubaOS-CX-Config-Generation)
+* [ArubaOS-Switch Firmware Upgrade Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-Switch-Firmware-Upgrade-Example)
+* [ArubaOS-Switch Module Configuration Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-Switch-Module-Configuration-Example)
+* [ArubaOS-Switch Task Configuration Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-Switch-Task-Configuration-Example)
+* [Zero Touch Provisioning (ZTP) Workflow](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/Zero-Touch-Provisioning-(ZTP)-Workflow)
 
+##### Ansible Tower
+* [Ansible Tower Integration](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/Ansible-Tower-Integration)
 
-##### Specific Workflows
-* [Zero Touch Provisioning (ZTP) Solution for an ArubaOS-Switch and ArubaOS-CX environment](https://github.com/aruba/aruba_switch_ansible/wiki/Zero-Touch-Provisioning-(ZTP)-Solution) 
-* [ArubaOS-Switch Configuration Automation](https://github.com/aruba/aruba_switch_ansible/wiki/ArubaOS-Switch-Configuration-Automation)
-* [ArubaOS-Switch Firmware Upgrade Automation](https://github.com/aruba/aruba_switch_ansible/wiki/ArubaOS-Switch-Firmware-Upgrade-Automation)
-* [ArubaOS-Switch and ArubaOS-CX Config Generation](https://github.com/aruba/aruba_switch_ansible/wiki/ArubaOS-Switch-and-ArubaOS-CX-Config-Generation)
-
-##### Ansible Tower Integration
-* [Ansible Tower Branch](https://github.com/aruba/aruba_switch_ansible/tree/ansible-tower-support)
 
 
 ## Project Structure
 ```bash
-├───aruba_task_lists                # Ansible tasks
-│   ├───aos_cx                          # Tasks for ArubaOS-CX
-│   ├───aos_switch                      # Tasks for ArubaOS-Switch
-│   └───ztp                             # Tasks for the ZTP Solution
+├───aruba_task_lists                # Ansible Task Lists
+│   ├───aos_cx                          # Task Lists for ArubaOS-CX
+│   ├───aos_switch                      # Task Lists for ArubaOS-Switch
+│   └───ztp                             # Task Lists for the ZTP Solution
 ├───config                          # Place for generated switch configs
 ├───files                           # Place for any additional files that are used in tasks
 ├───filter_plugins                  # Ansible default directory for custom filter plugins
 ├───group_vars                      # Branch related variables 
 ├───host_vars                       # Host related variables
+├───images                          # Directory for images in Wiki
 ├───inventory                       # System related variables
-├───inventory_creation              # Additional files to create parts of the inventory
+├───inventory_creation_scipts       # Scripts to create parts of the inventory from sources i.e. csv
 ├───library                         # Ansible default directory for custom modules
 ├───lookup_plugins                  # Ansible default directory for custom lookup plugins
 ├───templates                       # Place to hold Jinja templates for config generation
 ├───vault                           # Vault directory to save certain variables encrypted 
-├───wiki_docu                       # Files for documentation on the GitHub Wiki
 └───ztp_logs                        # Directory for additional logs that get created in the ZTP Solution
 └───ansible.cfg                     # Ansible configuration
-└───arubaos_switch_config.yml       # Playbook for ArubaOS-Switch Configuration Automation Workflow
-└───arubaos_switch_firmware.yml     # Playbook for ArubaOS-Switch Firmware Upgrade Automation Workflow
+└───arubaoscx_module_config_example.yml # Playbook for example usage of ArubaOS-CX Modules.
+└───arubaoscx_tasks_config_example.yml  # Playbook for ArubaOS-CX Task List Configuration Example Workflow
+└───arubaoss_firmware_example.yml       # Playbook for ArubaOS-Switch Firmware Upgrade Example Workflow
+└───arubaoss_module_config_example.yml  # Playbook for example usage of ArubaOS-Switch Modules.
+└───arubaoss_tasks_config_example.yml   # Playbook for ArubaOS-Switch Task List Configuration Example Workflow
 └───config_generator.yml            # Playbook for ArubaOS-Switch and ArubaOS-CX Config Generation Workflow
-└───ztp_start.yml                   # Playbook for Zero Touch Provisioning (ZTP) Solution Workflow
-└───aoss_module_config_example.yml  # Playbook for example usage of AOS-Switch Modules inside this project. 
-└───aoscx_module_config_example.yml # Playbook for example usage of AOS-CX Modules inside this project. 
+└───ztp_start.yml                   # Playbook for Zero Touch Provisioning (ZTP) Workflow
 ```
   

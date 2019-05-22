@@ -1,9 +1,0 @@
-- hosts: switch1
-  gather_facts: False
-  tasks:
-    - name: Adding new interface
-      arubaoscx_l3_interface:
-        interface: '1/1/3'
-        description: 'New l3 interface'
-
-    # Add further modules calls below here

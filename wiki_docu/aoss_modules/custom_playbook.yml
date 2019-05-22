@@ -1,8 +1,0 @@
-- hosts: switch1
-  gather_facts: False
-  tasks:
-    - name: Updates Hostname
-      arubaoss_system_attributes:
-        hostname: "automation_2930M_1"
-
-    # Add further modules calls below here

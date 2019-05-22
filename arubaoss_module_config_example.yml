@@ -16,12 +16,11 @@
 # under the License.
 
 
-# Example on how to use ArubaOS-Switch Ansible Modules to configure AOS-Switches in this Project setup
+# Example on how to use Aruba Switching Ansible Modules to configure ArubaOS-Switches in this Project setup
 #
 # Use via:
-# ansible-playbook aoss_module_config_example.yml -e site=branchX -e state=STATUS
+# ansible-playbook aoss_module_config_example.yml -e site=branch1 -e state=STATUS
 #
-# Replace X with branch number you want to configure
 # Repleace STATUS with "configure" to configure the switch and "unconfigure" to undo configuration done by the configuration part
 #
 ---
@@ -54,7 +53,6 @@
           arubaoss_system_attributes:
             hostname: "automation_2930M_1"
             use_ssl: True
-
 
         - name: Configure a vlan
           arubaoss_vlan:
