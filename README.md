@@ -25,13 +25,14 @@ See the documented steps on how to set up your inventory to use the workflows in
 ## Workflows
 This project currently holds the following Workflow Documentation. Please click on each link to see further information about the Workflow.
 
-* [ArubaOS-CX Module Configuration Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-CX-Module-Configuration-Example)
-* [ArubaOS-CX Task Configuration Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-CX-Task-Configuration-Example) 
-* [ArubaOS-Switch and ArubaOS-CX Config Generation](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-Switch-and-ArubaOS-CX-Config-Generation)
-* [ArubaOS-Switch Firmware Upgrade Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-Switch-Firmware-Upgrade-Example)
-* [ArubaOS-Switch Module Configuration Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-Switch-Module-Configuration-Example)
-* [ArubaOS-Switch Task Configuration Example](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/ArubaOS-Switch-Task-Configuration-Example)
-* [Zero Touch Provisioning (ZTP) Workflow](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/Zero-Touch-Provisioning-(ZTP)-Workflow)
+* [ArubaOS-CX Module Configuration Example](https://github.com/aruba/aruba-switch-ansible/wiki/ArubaOS-CX-Module-Configuration-Example)
+* [ArubaOS-CX Task Configuration Example](https://github.com/aruba/aruba-switch-ansible/wiki/ArubaOS-CX-Task-Configuration-Example) 
+* [ArubaOS-Switch and ArubaOS-CX Config Generation](https://github.com/aruba/aruba-switch-ansible/wiki/ArubaOS-Switch-and-ArubaOS-CX-Config-Generation)
+* [ArubaOS-Switch Firmware Upgrade Example](https://github.com/aruba/aruba-switch-ansible/wiki/ArubaOS-Switch-Firmware-Upgrade-Example)
+* [ArubaOS-Switch Module Configuration Example](https://github.com/aruba/aruba-switch-ansible/wiki/ArubaOS-Switch-Module-Configuration-Example)
+* [ArubaOS-Switch Task Configuration Example](https://github.com/aruba/aruba-switch-ansible/wiki/ArubaOS-Switch-Task-Configuration-Example)
+* [Zero Touch Provisioning (ZTP) Workflow](https://github.com/aruba/aruba-switch-ansible/wiki/Zero-Touch-Provisioning-(ZTP)-Workflow)
+
 
 ##### Ansible Tower
 * [Ansible Tower Integration](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/Ansible-Tower-Integration)
