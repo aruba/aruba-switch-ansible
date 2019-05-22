@@ -20,7 +20,7 @@ This project has been tested on Ubuntu 18.04 and CentOS 7 Linux OS but it can be
 This project currently holds the following Workflow Documentation. Please click on each link to see further information about the Workflow.
 
 #### Inventory Set Up
-See the documented steps on how to set up your inventory to use the workflows in this project here: [Project Inventory Set Up](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/Project-Inventory-Set-Up)
+See the documented steps on how to set up your inventory to use the workflows in this project here: [Project Inventory Set Up](https://github.com/aruba/aruba-switch-ansible/wiki/Project-Inventory-Set-Up)
     
 ## Workflows
 This project currently holds the following Workflow Documentation. Please click on each link to see further information about the Workflow.
@@ -35,7 +35,7 @@ This project currently holds the following Workflow Documentation. Please click 
 
 
 ##### Ansible Tower
-* [Ansible Tower Integration](https://github.hpe.com/switchautomation/arubaos-switch-ansible/wiki/Ansible-Tower-Integration)
+* [Ansible Tower Integration](https://github.com/aruba/aruba-switch-ansible/wiki/Ansible-Tower-Integration)
 
 
 
