@@ -239,7 +239,7 @@ def check_swi_version(result, module):
     :return: string of current version without ".swi" ending
     """
     # Init Vars
-    regex = u"WC\.[0-9]{2}\.[0-9]{2}\.[0-9]{4}"
+    regex = u"(?:WC|YA|YC|KB|WB|K|KB)\.[0-9]{2}\.[0-9]{2}\.[0-9]{4}"
 
     # Find correct version
     matches = re.findall(regex, result)
