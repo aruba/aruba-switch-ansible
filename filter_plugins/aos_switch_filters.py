@@ -63,7 +63,7 @@ def find_version(serach_string, version):
     :param version: string for one of the following (primary,secondary,primary_boot,secondary_boot)
     :return: SWI Version as string
     """
-    regex = u"WC\.[0-9]{2}\.[0-9]{2}\.[0-9]{4}"
+    regex = u"(?:WC|YA|YC|KB|WB|K|KB)\.[0-9]{2}\.[0-9]{2}\.[0-9]{4}"
     matches = re.findall(regex, serach_string)
     if version == "primary":
         return matches[0]
