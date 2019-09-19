@@ -1,0 +1,81 @@
+all:
+  children:
+    branch1:
+      vars:
+        ospf_id: 1
+        ospf_area: 0.0.0.0
+      hosts:
+        Spine1:
+          ansible_host: 10.100.1.1
+          ansible_user: admin
+          ansible_password: admin
+          ansible_connection: local  # Do not change
+          config_template: spine_base_config.j2  # Jinja2 Template file
+          hostname: Spine1
+          oobm_ip: dhcp
+          oobm_mask: 24
+          leaf_1_link_int: 1/1/1
+          leaf_2_link_int: 1/1/2
+          leaf_1_link_ip: 1.1.2.1
+          leaf_1_link_mask: 31
+          leaf_2_link_ip: 1.1.2.5
+          leaf_2_link_mask: 31
+          loopback_ip: 1.1.1.1
+          loopback_mask: 32
+        Spine2:
+          ansible_host: 10.100.1.2
+          ansible_user: admin
+          ansible_password: admin
+          ansible_connection: local  # Do not change
+          config_template: spine_base_config.j2  # Jinja2 Template file
+          hostname: Spine2
+          oobm_ip: dhcp
+          oobm_mask: 24
+          leaf_1_link_int: 1/1/1
+          leaf_2_link_int: 1/1/2
+          leaf_1_link_ip: 1.1.2.3
+          leaf_1_link_mask: 31
+          leaf_2_link_ip: 1.1.2.7
+          leaf_2_link_mask: 31
+          loopback_ip: 1.1.1.2
+          loopback_mask: 32
+        Leaf1:
+          ansible_host: 10.100.1.11
+          ansible_user: admin
+          ansible_password: admin
+          ansible_connection: local  # Do not change
+          config_template: leaf_base_config.j2  # Jinja2 Template file
+          hostname: Leaf1
+          oobm_ip: dhcp
+          oobm_mask: 24
+          client_vlan: 11
+          client_vlan_ip: 1.1.11.254
+          client_vlan_mask: 24
+          spine_1_link_int: 1/1/1
+          spine_2_link_int: 1/1/2
+          spine_1_link_ip: 1.1.2.0
+          spine_1_link_mask: 31
+          spine_2_link_ip: 1.1.2.2
+          spine_2_link_mask: 31
+          loopback_ip: 1.1.1.11
+          loopback_mask: 32
+        Leaf2:
+          ansible_host: 10.100.1.12
+          ansible_user: admin
+          ansible_password: admin
+          ansible_connection: local  # Do not change
+          config_template: leaf_base_config.j2  # Jinja2 Template file
+          hostname: Leaf2
+          oobm_ip: dhcp
+          oobm_mask: 24
+          client_vlan: 12
+          client_vlan_ip: 1.1.12.254
+          client_vlan_mask: 24
+          spine_1_link_int: 1/1/1
+          spine_2_link_int: 1/1/2
+          spine_1_link_ip: 1.1.2.4
+          spine_1_link_mask: 31
+          spine_2_link_ip: 1.1.2.6
+          spine_2_link_mask: 31
+          loopback_ip: 1.1.1.12
+          loopback_mask: 32

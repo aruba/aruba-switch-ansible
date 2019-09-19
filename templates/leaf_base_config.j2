@@ -1,0 +1,50 @@
+hostname {{hostname}}
+user admin password plaintext admin
+!
+!
+!
+
+ssh server vrf mgmt
+!
+!
+!
+!
+!
+router ospf {{ospf_id}}
+    area {{ospf_area}}
+vlan 1,{{client_vlan}}
+interface mgmt
+    no shutdown
+{% if oobm_ip == 'dhcp' %}
+    ip dhcp
+{% else %}
+    ip static {{oobm_ip}}/{{oobm_mask}}
+{% endif %}
+interface 1/1/1
+    no shutdown
+    no routing
+    vlan access {{client_vlan}}
+    spanning-tree port-type admin-edge
+interface 1/1/2
+    no shutdown
+    no routing
+    vlan access {{client_vlan}}
+    spanning-tree port-type admin-edge
+interface {{spine_1_link_int}}
+    no shutdown
+    ip address {{spine_1_link_ip}}/{{spine_1_link_mask}}
+    ip ospf {{ospf_id}} area {{ospf_area}}
+    ip ospf network point-to-point
+interface {{spine_2_link_int}}
+    no shutdown
+    ip address {{spine_2_link_ip}}/{{spine_2_link_mask}}
+    ip ospf {{ospf_id}} area {{ospf_area}}
+    ip ospf network point-to-point
+interface loopback 0
+    ip address {{loopback_ip}}/{{loopback_mask}}
+    ip ospf {{ospf_id}} area {{ospf_area}}
+interface vlan{{client_vlan}}
+    ip address {{client_vlan_ip}}/{{client_vlan_mask}}
+    ip ospf {{ospf_id}} area {{ospf_area}}
+https-server rest access-mode read-write
+https-server vrf mgmt
