@@ -1,0 +1,37 @@
+hostname {{hostname}}
+user admin password plaintext admin
+!
+!
+!
+
+ssh server vrf mgmt
+!
+!
+!
+!
+!
+router ospf {{ospf_id}}
+    area {{ospf_area}}
+vlan 1
+interface mgmt
+    no shutdown
+{% if oobm_ip == 'dhcp' %}
+    ip dhcp
+{% else %}
+    ip static {{oobm_ip}}/{{oobm_mask}}
+{% endif %}
+interface {{leaf_1_link_int}}
+    no shutdown
+    ip address {{leaf_1_link_ip}}/{{leaf_1_link_mask}}
+    ip ospf {{ospf_id}} area {{ospf_area}}
+    ip ospf network point-to-point
+interface {{leaf_2_link_int}}
+    no shutdown
+    ip address {{leaf_2_link_ip}}/{{leaf_2_link_mask}}
+    ip ospf {{ospf_id}} area {{ospf_area}}
+    ip ospf network point-to-point
+interface loopback 0
+    ip address {{loopback_ip}}/{{loopback_mask}}
+    ip ospf {{ospf_id}} area {{ospf_area}}
+https-server rest access-mode read-write
+https-server vrf mgmt
