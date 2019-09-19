@@ -117,3 +117,13 @@
           when:  golden_sha != running_sha
           tags: push
       tags: check
+
+    - name:
+      block:
+        - name: Pull Running Config through TFTP and Update GOLDEN config
+          arubaos_cx_ssh_cli:
+            ip: "{{ip | default(ansible_host)}}"
+            user: "{{user | default(ansible_user)}}"
+            password: "{{password | default(ansible_password)}}"
+            commands: ["copy running-config tftp://{{tftp_server}}/{{golden_config_file}} cli vrf mgmt"]
+      tags: update_golden
