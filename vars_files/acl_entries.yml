@@ -1,0 +1,25 @@
+v4_acl_entries:
+  '1': {action: deny, count: false, dst_ip: 10.10.12.11/255.255.255.255, protocol: tcp,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '10': {action: deny, count: true, dst_ip: 10.10.12.11/255.255.255.255, protocol: sctp,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '10000': {action: permit, count: true, dst_ip: 10.60.20.2/255.255.255.0, protocol: any,
+    src_ip: 10.60.30.2/255.255.255.0}
+  '11': {action: permit, count: false, dst_ip: 10.10.12.11/255.255.255.255, protocol: tcp,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '12': {action: permit, count: false, dst_ip: 10.10.12.11/255.255.255.255, protocol: pim,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '13': {action: permit, count: false, dst_ip: 10.10.12.11/255.255.255.255, protocol: icmp,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '14': {action: permit, count: true, dst_ip: 10.10.12.11/255.255.255.255, protocol: pim,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '15': {action: deny, count: true, dst_ip: 10.10.12.11/255.255.255.255, protocol: icmp,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '16': {action: permit, count: true, dst_ip: 10.10.12.11/255.255.255.255, protocol: ospf,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '17': {action: permit, count: false, dst_ip: 10.10.12.11/255.255.255.255, protocol: icmp,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '18': {action: deny, count: false, dst_ip: 10.10.12.11/255.255.255.255, protocol: tcp,
+    src_ip: 10.10.12.12/255.255.255.255}
+  '9999': {action: permit, count: true, dst_ip: 0.0.0.0/0.0.0.0, protocol: any,
+    src_ip: 0.0.0.0/0.0.0.0}
