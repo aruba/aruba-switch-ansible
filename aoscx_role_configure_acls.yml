@@ -1,0 +1,19 @@
+---
+- hosts: leaf
+  vars_files:
+    - vars_files/acl_entries.yml
+  roles:
+    - role: arubanetworks.aoscx_role
+  gather_facts: False
+  tasks:
+    - name: Configure IPv4 ACL
+      aoscx_acl:
+        name: ipv4_acl
+        type: ipv4
+        acl_entries: "{{v4_acl_entries}}"
+
+    - name: Apply ipv4 ACL to Client interfaces
+      aoscx_acl_interface:
+        acl_name: ipv4_acl
+        acl_type: ipv4
+        acl_interface_list: ["1/1/1", "1/1/2"]
