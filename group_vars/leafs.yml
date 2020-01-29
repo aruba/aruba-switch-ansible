@@ -1,0 +1,9 @@
+config_template: leaf.j2
+client_vlan: 10
+client_int: 1/1/1
+vsx_ka: 1/1/31
+vsx_isl: 1/1/32
+vsx_ka_ip_primary: 10.1.2.0
+vsx_ka_ip_secondary: 10.1.2.1
+spine1_int: 1/1/47
+spine2_int: 1/1/48

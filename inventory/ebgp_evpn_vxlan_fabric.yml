@@ -1,0 +1,43 @@
+##########################
+# EBGP EVPN VXLAN VSX SPINE LEAF FABRIC DEPLOY
+# Example Inventory
+##########################
+
+[aoscx_switches]
+Spine1 ansible_host=10.100.1.1
+Spine2 ansible_host=10.100.1.2
+Leaf1a ansible_host=10.100.1.11
+Leaf1b ansible_host=10.100.1.21
+Leaf2a ansible_host=10.100.1.12
+Leaf2b ansible_host=10.100.1.22
+Leaf3a ansible_host=10.100.1.13
+Leaf3b ansible_host=10.100.1.23
+
+[branch1_dcn_switches]
+Leaf1a
+Leaf1b
+Leaf2a
+Leaf2b
+Leaf3a
+Leaf3b
+Spine1
+Spine2
+
+[leafs]
+Leaf1a
+Leaf1b
+Leaf2a
+Leaf2b
+Leaf3a
+Leaf3b
+
+[spines]
+Spine1
+Spine2
+
+[servers]
+server1 ansible_host=10.10.10.62
+
+[servers:vars]
+ansible_python_interpreter=/usr/bin/python3 ansible_password=password ansible_user=administrator ansible_become_pass=password
+

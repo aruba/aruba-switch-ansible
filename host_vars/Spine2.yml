@@ -1,0 +1,16 @@
+hostname: Spine2
+oobm_ip: 10.100.1.2
+asn: "{{spine2_asn}}"
+leaf1a_int_ip: 192.168.2.3
+leaf1b_int_ip: 192.168.2.7
+leaf2a_int_ip: 192.168.2.11
+leaf2b_int_ip: 192.168.2.15
+leaf3a_int_ip: 192.168.2.19
+leaf3b_int_ip: 192.168.2.23
+loopback0_ip: 192.168.1.12
+leaf1a_ip: 192.168.2.2
+leaf1b_ip: 192.168.2.6
+leaf2a_ip: 192.168.2.10
+leaf2b_ip: 192.168.2.14
+leaf3a_ip: 192.168.2.18
+leaf3b_ip: 192.168.2.22

@@ -1,0 +1,271 @@
+---
+- hosts: aoscx_switches
+  connection: local
+  gather_facts: False
+  tasks:
+
+    - name: Generate Template for Device
+      template: src="{{config_template}}" dest="{{config_path}}{{inventory_hostname}}.conf" mode='0777'
+
+    - block:
+        # Login to AOS-CX Switch
+        - name: Login to AOS-CX Switch
+          uri:
+            url: "https://{{ansible_host}}/rest/v1/login"
+            method: POST
+            return_content: yes
+            headers:
+              Content-Type: "application/x-www-form-urlencoded"
+              Accept: application/json
+            body: "username={{ansible_user}}&password={{ansible_password}}"
+            validate_certs: no
+            status_code: 200
+            use_proxy: no
+          register: cx_session
+
+        - name: Push Generated Config to Device
+          uri:
+            url: "https://{{ansible_host}}/rest/v1/fullconfigs/running-config?from=tftp%3A%2F%2F{{tftp_server}}%2F{{inventory_hostname}}.conf&vrf=mgmt"
+            method: PUT
+            headers:
+              cookie: "{{ cx_session.set_cookie }}"
+            validate_certs: no
+            status_code: 200
+          register: response
+          changed_when: response.status == 200
+
+      rescue:
+        - debug:
+            msg: "{{response.msg}}"
+
+      always:
+        # Logout from AOS-CX Switch
+        - name: Logout from AOS-CX Switch
+          uri:
+            url: 'https://{{ansible_host}}/rest/v1/logout'
+            method: POST
+            body_format: json
+            headers:
+              cookie: "{{ cx_session.set_cookie }}"
+            validate_certs: no
+            status_code: 200
+
+- hosts: spines
+  connection: local
+  tasks:
+    - name: Create BGP Neighbors and EVPN Address Family on Spine for Leaf1
+      include: aoscx_task_lists/bgp_neighbor.yml
+      vars:
+        neighbor_ip: "{{item}}"
+        ebgp_hop_count: 3
+        remote_as: "{{leaf1_asn|int}}"
+      loop: "{{leaf1_loopback}}"
+
+    - name: Create BGP Neighbors and EVPN Address Family on Spine for Leaf2
+      include: aoscx_task_lists/bgp_neighbor.yml
+      vars:
+        neighbor_ip: "{{item}}"
+        ebgp_hop_count: 3
+        remote_as: "{{leaf2_asn| int}}"
+      loop: "{{leaf2_loopback}}"
+
+    - name: Create BGP Neighbors and EVPN Address Family on Spine for Leaf3
+      include: aoscx_task_lists/bgp_neighbor.yml
+      vars:
+        neighbor_ip: "{{item}}"
+        ebgp_hop_count: 3
+        remote_as: "{{leaf3_asn | int}}"
+      loop: "{{leaf3_loopback}}"
+
+- hosts: leafs  
+  roles:
+    - role: aoscx-ansible-role
+  vars:
+    ansible_connection: httpapi
+    ansible_network_os: aoscx
+    ansible_httpapi_validate_certs: False
+    ansible_httpapi_use_ssl: True
+    ansible_acx_no_proxy: True
+  gather_facts: False
+  tasks:
+    - name: Create BGP Neighbors and EVPN Address Family
+      include: aoscx_task_lists/bgp_neighbor.yml
+      vars:
+        neighbor_ip: "{{hostvars.Spine1.loopback0_ip}}"
+        ebgp_hop_count: 3
+        remote_as: "{{spine1_asn}}"
+
+    - name: Create BGP Neighbors and EVPN Address Family
+      include: aoscx_task_lists/bgp_neighbor.yml
+      vars:
+        neighbor_ip: "{{hostvars.Spine2.loopback0_ip}}"
+        ebgp_hop_count: 3
+        remote_as: "{{spine2_asn}}"
+
+    - name: Create Server VLAN
+      aoscx_vlan:
+        vlan_id: "{{client_vlan}}"
+        description: Apache Server
+
+    - name: Vlan Access
+      aoscx_l2_interface:
+        interface: "{{client_int}}"
+        vlan_mode: access
+        vlan_access: '{{client_vlan}}'
+
+    - name: Create VXLAN interface
+      include: aoscx_task_lists/vxlan.yml
+      vars:
+        vxlan: vxlan1
+        source_ip: "{{loopback1_ip}}"
+        vlan_id: "{{client_vlan|int}}"
+
+    - name: Create EVPN instance and VLAN mapping
+      include: aoscx_task_lists/evpn.yml
+      vars:
+        export_route: ['1:{{client_vlan}}']
+        import_route: ['1:{{client_vlan}}']
+        rd: auto
+        vlan_id: "{{client_vlan|int}}"
+
+
+- hosts: servers
+  become: true
+  gather_facts: false
+  vars:
+    create_user: aruba
+    copy_local_key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+    sys_packages: [ 'curl', 'vim', 'git', 'ufw']
+    app_user: "aruba"
+    http_host: "aruba_apache_server"
+    http_conf: "aruba_apache_server.conf"
+    http_port: "80"
+    disable_default: true
+  tasks:
+    - name: Install Prerequisites
+      apt: name=aptitude update_cache=yes state=latest force_apt_get=yes
+
+# Sudo Group Setup
+    - name: Make sure we have a 'network_admin' group
+      group:
+        name: network_admin
+        state: present
+
+    - name: Allow 'network_admin' group to have passwordless sudo
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^%network_admin'
+        line: '%network_admin ALL=(ALL) NOPASSWD: ALL'
+        validate: '/usr/sbin/visudo -cf %s'
+
+# User + Key Setup
+    - name: Create a new regular user with sudo privileges
+      user:
+        name: "{{ create_user }}"
+        state: present
+        groups: network_admin
+        append: true
+        create_home: true
+        shell: /bin/bash
+
+    - name: Set authorized key for remote user
+      authorized_key:
+        user: "{{ create_user }}"
+        state: present
+        key: "{{ copy_local_key }}"
+
+    - name: Disable password authentication for root
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        state: present
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin prohibit-password'
+
+# Install Packages
+    - name: Update apt
+      apt: update_cache=yes
+
+    - name: Install required system packages
+      apt: name={{ sys_packages }} state=latest
+
+# UFW Setup
+    - name: UFW - Allow SSH connections
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: UFW - Deny all other incoming traffic by default
+      ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+# Install Packages
+    - name: Update apt
+      apt: update_cache=yes
+
+    - name: Install required system packages
+      apt: name={{ sys_packages }} state=latest
+
+# UFW Setup
+    - name: UFW - Allow SSH connections
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: UFW - Deny all other incoming traffic by default
+      ufw:
+        state: enabled
+        policy: deny
+        direction: incoming
+
+    - name: Install prerequisites
+      apt: name={{ item }} update_cache=yes state=latest force_apt_get=yes
+      loop: [ 'aptitude' ]
+
+    - name: Install Apache
+      apt: name=apache2 update_cache=yes state=latest
+
+    - name: Create document root
+      file:
+        path: "/var/www/{{ http_host }}"
+        state: directory
+        owner: "{{ app_user }}"
+        mode: '0755'
+
+    - name: Copy index test page
+      template:
+        src: "files/index.html.j2"
+        dest: "/var/www/{{ http_host }}/index.html"
+
+    - name: Set up Apache virtualhost
+      template:
+        src: "files/apache.conf.j2"
+        dest: "/etc/apache2/sites-available/{{ http_conf }}"
+
+    - name: Enable new site
+      shell: /usr/sbin/a2ensite {{ http_conf }}
+      notify: Reload Apache
+
+    - name: Disable default Apache site
+      shell: /usr/sbin/a2dissite 000-default.conf
+      when: disable_default
+      notify: Reload Apache
+
+    - name: "UFW - Allow HTTP on port {{ http_port }}"
+      ufw:
+        rule: allow
+        port: "{{ http_port }}"
+        proto: tcp
+
+  handlers:
+    - name: Reload Apache
+      service:
+        name: apache2
+        state: reloaded
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted

@@ -1,0 +1,12 @@
+config_path: "/var/lib/tftpboot/"
+oobm_mask: 24
+oobm_default_gateway: 10.10.10.254
+tftp_server: 10.10.10.201
+spine1_asn: 65101
+spine2_asn: 65102
+leaf1_asn: 65001
+leaf2_asn: 65002
+leaf3_asn: 65003
+leaf1_loopback: ['192.168.1.1', '192.168.1.2']
+leaf2_loopback: ['192.168.1.4', '192.168.1.3']
+leaf3_loopback: ['192.168.1.5', '192.168.1.6']

@@ -1,0 +1,56 @@
+- block:
+    # Login to AOS-CX Switch
+    - name: Login to AOS-CX Switch
+      uri:
+        url: "https://{{ansible_host}}/rest/v1/login"
+        method: POST
+        return_content: yes
+        headers:
+          Content-Type: "application/x-www-form-urlencoded"
+          Accept: application/json
+        body: "username={{ansible_user}}&password={{ansible_password}}"
+        validate_certs: no
+        status_code: 200
+        follow_redirects: yes
+      register: cx_session
+
+    # Verify VRF Exists
+    - name: Create BGP Neighbor
+      uri:
+        url: "https://{{ansible_host}}/rest/v1/system/vrfs/default/bgp_routers/{{asn}}/bgp_neighbors"
+        method: POST
+        body_format: json
+        headers:
+          cookie: "{{ cx_session.set_cookie }}"
+        body: { "ip_or_group_name": "{{neighbor_ip}}",
+          "is_peer_group": False,
+          "activate": {"ipv4-unicast": False, "ipv6-unicast": False,
+          "l2vpn-evpn": True},
+          "ebgp_hop_count": "{{ebgp_hop_count}}",
+          "local_interface": "/rest/v1/system/ports/loopback0",
+          "next_hop_unchanged": {"l2vpn-evpn": True},
+          "remote_as": "{{remote_as}}",
+          "send_community": {"ipv4-unicast": "none", "ipv6-unicast": "none",
+          "l2vpn-evpn": "extended"},
+          "shutdown": False        
+        }
+        validate_certs: no
+        status_code: 201
+      register: response
+      changed_when: response.status == 201
+
+  rescue:
+    - debug:
+        msg: "{{response.msg}}"
+
+  always:
+    # Logout from AOS-CX Switch
+    - name: Logout from AOS-CX Switch
+      uri:
+        url: 'https://{{ansible_host}}/rest/v1/logout'
+        method: POST
+        body_format: json
+        headers:
+          cookie: "{{ cx_session.set_cookie }}"
+        validate_certs: no
+        status_code: 200
