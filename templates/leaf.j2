@@ -1,0 +1,76 @@
+hostname {{hostname}}
+!
+!
+!
+ssh server vrf mgmt
+!
+!
+!
+!
+!
+vlan 1
+interface mgmt
+    no shutdown
+    ip static {{oobm_ip}}/{{oobm_mask}}
+    default-gateway {{oobm_default_gateway}}
+system interface-group 1 speed 10g
+    !interface group 1 contains ports 1/1/1-1/1/12
+system interface-group 3 speed 10g
+    !interface group 3 contains ports 1/1/25-1/1/36
+system interface-group 4 speed 10g
+    !interface group 4 contains ports 1/1/37-1/1/48
+interface {{vsx_ka}} 
+    no shutdown
+    description VSX KA
+{% if vsx_role == 'primary' %}
+    ip address {{vsx_ka_ip_primary}}/31
+{% else %}
+    ip address {{vsx_ka_ip_secondary}}/31
+{% endif %}    
+interface {{vsx_isl}} 
+    no shutdown
+    description VSX ISL
+    no routing
+    vlan trunk native 1 tag
+    vlan trunk allowed all
+interface {{spine1_int}} 
+    no shutdown
+    description Spine1
+    ip address {{spine1_int_ip}}/31
+interface {{spine2_int}} 
+    no shutdown
+    description Spine2
+    ip address {{spine2_int_ip}}/31
+interface loopback 0
+    ip address {{loopback0_ip}}/32
+interface loopback 1
+    ip address {{loopback1_ip}}/32
+vsx
+    inter-switch-link {{vsx_isl}}
+    role {{vsx_role}}
+{% if vsx_role == 'primary' %}
+    keepalive peer {{vsx_ka_ip_secondary}} source {{vsx_ka_ip_primary}}
+{% else %}
+    keepalive peer {{vsx_ka_ip_primary}} source {{vsx_ka_ip_secondary}}
+{% endif %}
+    no split-recovery
+router bgp {{asn}}
+    bgp router-id {{loopback0_ip}}
+    bgp fast-external-fallover
+    bgp bestpath as-path multipath-relax
+    neighbor {{spine1_a_ip}} remote-as {{spine1_asn}}
+    neighbor {{spine1_b_ip}} remote-as {{spine1_asn}}
+    neighbor {{spine2_a_ip}} remote-as {{spine2_asn}}
+    neighbor {{spine2_b_ip}} remote-as {{spine2_asn}}
+    address-family ipv4 unicast
+        neighbor {{spine1_a_ip}} activate
+        neighbor {{spine1_b_ip}} activate
+        neighbor {{spine2_a_ip}} activate
+        neighbor {{spine2_b_ip}} activate
+        redistribute connected
+        network {{loopback0_ip}}/32
+        network {{loopback1_ip}}/32
+    exit-address-family
+!
+https-server rest access-mode read-write
+https-server vrf mgmt

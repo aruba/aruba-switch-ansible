@@ -1,0 +1,12 @@
+hostname: Leaf1b
+oobm_ip: 10.100.1.21
+vsx_role: secondary
+asn: "{{leaf1_asn}}"
+spine1_int_ip: 192.168.2.4
+spine2_int_ip: 192.168.2.6
+loopback0_ip: 192.168.1.2
+loopback1_ip: 192.168.100.2
+spine1_a_ip: 192.168.2.1
+spine1_b_ip: 192.168.2.5
+spine2_a_ip: 192.168.2.3
+spine2_b_ip: 192.168.2.7

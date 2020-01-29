@@ -1,0 +1,91 @@
+- block:
+    # Login to AOS-CX Switch
+    - name: Login to AOS-CX Switch
+      uri:
+        url: "https://{{ansible_host}}/rest/v1/login"
+        method: POST
+        return_content: yes
+        headers:
+          Content-Type: "application/x-www-form-urlencoded"
+          Accept: application/json
+        body: "username={{ansible_user}}&password={{ansible_password}}"
+        validate_certs: no
+        status_code: 200
+        follow_redirects: yes
+      register: cx_session
+
+    - name: Create VXLAN Port
+      uri:
+        url: "https://{{ansible_host}}/rest/v1/system/ports"
+        method: POST
+        body_format: json
+        headers:
+          cookie: "{{ cx_session.set_cookie }}"
+        body: { "admin": "up",
+          "interfaces": [],
+          "name": "{{vxlan}}",
+          "routing": False   
+        }
+        validate_certs: no
+        status_code: 201
+      register: response
+      changed_when: response.status == 201
+      vars:
+        vxlan: vxlan1
+
+    - name: Create VXLAN Interface
+      uri:
+        url: "https://{{ansible_host}}/rest/v1/system/interfaces"
+        method: POST
+        body_format: json
+        headers:
+          cookie: "{{ cx_session.set_cookie }}"
+        body: {"name": "{{vxlan}}",
+          "options": {"local_ip": "{{source_ip}}", "vxlan_dest_udp_port": "4789"},
+          "referenced_by": "/rest/v1/system/ports/{{vxlan}}",
+          "type": "vxlan",
+          "user_config":{"admin": "up"}
+        }
+        validate_certs: no
+        status_code: 201
+      register: response
+      changed_when: response.status == 201
+      vars:
+        vxlan: vxlan1
+        source_ip: 10.2.100.2
+
+    - name: Create VXLAN VNI Mapping
+      uri:
+        url: "https://{{ansible_host}}/rest/v1/system/virtual_network_ids"
+        method: POST
+        body_format: json
+        headers:
+          cookie: "{{ cx_session.set_cookie }}"
+        body: {"id": "{{vlan_id}}",
+          "interface": "/rest/v1/system/interfaces/{{vxlan}}",
+          "type": "vxlan_vni",
+          "vlan": "/rest/v1/system/vlans/{{vlan_id}}"
+        }
+        validate_certs: no
+        status_code: 201
+      register: response
+      changed_when: response.status == 201
+      vars:
+        vlan_id: 10
+        vxlan: vxlan1
+
+  rescue:
+    - debug:
+        msg: "{{response.msg}}"
+
+  always:
+    # Logout from AOS-CX Switch
+    - name: Logout from AOS-CX Switch
+      uri:
+        url: 'https://{{ansible_host}}/rest/v1/logout'
+        method: POST
+        body_format: json
+        headers:
+          cookie: "{{ cx_session.set_cookie }}"
+        validate_certs: no
+        status_code: 200

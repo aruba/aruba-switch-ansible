@@ -1,0 +1,7 @@
+config_template: spine.j2
+leaf1b_int: 1/1/43
+leaf1a_int: 1/1/44
+leaf2a_int: 1/1/45
+leaf2b_int: 1/1/46
+leaf3a_int: 1/1/47
+leaf3b_int: 1/1/48

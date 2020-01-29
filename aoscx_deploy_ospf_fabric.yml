@@ -46,26 +46,18 @@
             commands: ["copy running-config tftp://{{tftp_server}}/{{golden_config_file}} cli vrf mgmt"]
       tags: push_generated
 
-    - name: Restore Golden Config
+    - name:
       block:
-        - name: Copy Stored Golden Config to Startup through TFTP
+        - name: Copy Stored Golden Config to Running through TFTP
           arubaos_cx_ssh_cli:
             ip: "{{ip | default(ansible_host)}}"
             user: "{{user | default(ansible_user)}}"
             password: "{{password | default(ansible_password)}}"
-            commands: ["erase startup", "copy tftp://{{tftp_server}}/{{golden_config_file}} startup-config vrf mgmt"]
-          ignore_errors: True
-
-        - name: Copy Startup Golden Config to Running
-          arubaos_cx_ssh_cli:
-            ip: "{{ip | default(ansible_host)}}"
-            user: "{{user | default(ansible_user)}}"
-            password: "{{password | default(ansible_password)}}"
-            commands: ["copy startup running"]
+            commands: ["erase startup", "copy tftp://{{tftp_server}}/{{golden_config_file}} startup vrf mgmt", "copy startup running"]
           ignore_errors: True
       tags: push_golden
 
-    - name: Check running against golden config
+    - name: Check golden config against running
       block:
         - name: Pull Current Running Config through TFTP
           arubaos_cx_ssh_cli:
@@ -97,33 +89,13 @@
           when:  golden_sha != running_sha
 
       rescue:
-        - name: Restore Stored Golden Config to Startup through TFTP
+        - name: Restore Stored Golden Config to Running through TFTP
           arubaos_cx_ssh_cli:
             ip: "{{ip | default(ansible_host)}}"
             user: "{{user | default(ansible_user)}}"
             password: "{{password | default(ansible_password)}}"
-            commands: ["erase startup", "copy tftp://{{tftp_server}}/{{golden_config_file}} startup-config vrf mgmt"]
-          ignore_errors: True
-          when:  golden_sha != running_sha
-          tags: push
-
-        - name: Copy Startup Golden Config to Running
-          arubaos_cx_ssh_cli:
-            ip: "{{ip | default(ansible_host)}}"
-            user: "{{user | default(ansible_user)}}"
-            password: "{{password | default(ansible_password)}}"
-            commands: ["copy startup running"]
+            commands: ["erase startup", "copy tftp://{{tftp_server}}/{{golden_config_file}} startup-config vrf mgmt", "copy startup running"]
           ignore_errors: True
           when:  golden_sha != running_sha
           tags: push
       tags: check
-
-    - name:
-      block:
-        - name: Pull Running Config through TFTP and Update GOLDEN config
-          arubaos_cx_ssh_cli:
-            ip: "{{ip | default(ansible_host)}}"
-            user: "{{user | default(ansible_user)}}"
-            password: "{{password | default(ansible_password)}}"
-            commands: ["copy running-config tftp://{{tftp_server}}/{{golden_config_file}} cli vrf mgmt"]
-      tags: update_golden

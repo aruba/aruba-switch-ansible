@@ -1,0 +1,67 @@
+- block:
+    # Login to AOS-CX Switch
+    - name: Login to AOS-CX Switch
+      uri:
+        url: "https://{{ansible_host}}/rest/v1/login"
+        method: POST
+        return_content: yes
+        headers:
+          Content-Type: "application/x-www-form-urlencoded"
+          Accept: application/json
+        body: "username={{ansible_user}}&password={{ansible_password}}"
+        validate_certs: no
+        status_code: 200
+        follow_redirects: yes
+      register: cx_session
+
+    - name: Create EVPN Instance
+      uri:
+        url: "https://{{ansible_host}}/rest/v1/system/evpns"
+        method: POST
+        body_format: json
+        headers:
+          cookie: "{{ cx_session.set_cookie }}"
+        body: {
+        }
+        validate_certs: no
+        status_code: 201
+      register: response
+      changed_when: response.status == 201
+
+    - name: Add EVPN VLAN and Route Targets
+      uri:
+        url: "https://{{ansible_host}}/rest/v1/system/evpns/evpn_vlans"
+        method: POST
+        body_format: json
+        headers:
+          cookie: "{{ cx_session.set_cookie }}"
+        body: {"export_route_targets": "{{export_route}}",
+          "import_route_targets": "{{import_route}}",
+          "rd": "{{rd}}",
+          "vlan": "/rest/v1/system/vlans/{{vlan_id}}"
+        }
+        validate_certs: no
+        status_code: 201
+      register: response
+      changed_when: response.status == 201
+      vars:
+        export_route: ['1:10']
+        import_route: ['1:10']
+        rd: auto
+        vlan_id: 10
+
+  rescue:
+    - debug:
+        msg: "{{response.msg}}"
+
+  always:
+    # Logout from AOS-CX Switch
+    - name: Logout from AOS-CX Switch
+      uri:
+        url: 'https://{{ansible_host}}/rest/v1/logout'
+        method: POST
+        body_format: json
+        headers:
+          cookie: "{{ cx_session.set_cookie }}"
+        validate_certs: no
+        status_code: 200

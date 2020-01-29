@@ -1,0 +1,5 @@
+ansible_user: admin
+ansible_password: admin
+ansible_net_user: admin
+ansible_net_password: admin
+ansible_connection: local
