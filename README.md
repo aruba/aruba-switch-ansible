@@ -1,7 +1,7 @@
 # Ansible Aruba Switching Automation Workflow GitHub 
 Welcome to the Aruba Switching Automation Workflow GitHub for automation with Ansible!
 This repository uses [Ansible tasks lists](https://github.com/aruba/aruba-switch-ansible/tree/master/aruba_task_lists), [SSH modules](https://github.com/aruba/aruba-switch-ansible/tree/master/library), and the [Aruba Switching Ansible Modules](https://github.com/aruba/aruba-ansible-modules)
- to configure ArubaOS-Switch and ArubsOS-CX devices.
+ to configure ArubaOS-Switch and ArubaOS-CX devices.
 
 ## Prerequisites
 This project has been tested on Ubuntu 18.04 and CentOS 7 Linux OS but it can be used on any Linux based system.
