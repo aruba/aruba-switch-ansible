@@ -1,3 +1,12 @@
+:warning: :warning: :warning: :warning: :warning: 
+
+**_This repository is deprecated._**
+
+**_For all Aruba created Ansible content visit [ArubaNetworks on Galaxy](https://galaxy.ansible.com/arubanetworks)._**
+
+**_For official AOS-CX automation with Ansible guides and workflows visit Aruba's [Developer Hub](https://developer.arubanetworks.com/aruba-aoscx)._**  
+
+:warning: :warning: :warning: :warning: :warning: 
 # Ansible Aruba Switching Automation Workflow GitHub 
 Welcome to the Aruba Switching Automation Workflow GitHub for automation with Ansible!
 This repository uses [Ansible tasks lists](https://github.com/aruba/aruba-switch-ansible/tree/master/aruba_task_lists), [SSH modules](https://github.com/aruba/aruba-switch-ansible/tree/master/library), and the [Aruba Switching Ansible Modules](https://github.com/aruba/aruba-ansible-modules)
